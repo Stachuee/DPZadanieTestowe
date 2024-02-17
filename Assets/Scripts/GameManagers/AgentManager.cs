@@ -15,10 +15,21 @@ public class AgentManager : MonoBehaviour
     List<Agent> allAgents = new List<Agent>();
     List<Transform> allAgentTransforms = new List<Transform>();
 
+    Dictionary<int, string> agentNames = new Dictionary<int, string>(); // remember to remove names after destroying agent
+
+    [SerializeField] Vector3 playfieldCenter;
+    [SerializeField] Vector3 playfieldSize;
+
+
+    int nextAgentId = 0;
+
     NativeArray<Agent> agentsNativeArray;
     TransformAccessArray transformAccessArray;
 
     JobHandle agentSteeringHandle;
+
+
+    [SerializeField] AgentTypeSO toSpawn;
 
     private void Awake()
     {
@@ -35,7 +46,7 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
-        SpawnAgent();
+        SpawnAgent(toSpawn, new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x)/2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2));
     }
 
 
@@ -56,7 +67,10 @@ public class AgentManager : MonoBehaviour
         }
 
         AgentSteering agentSteeringJob = new AgentSteering(agentsNativeArray, 
-            Time.deltaTime);
+            Time.deltaTime,
+            playfieldSize,
+            playfieldCenter
+            );
 
         agentSteeringHandle = agentSteeringJob.Schedule(transformAccessArray);
 
@@ -69,35 +83,32 @@ public class AgentManager : MonoBehaviour
         for(int i = 0; i < allAgents.Count; i++)
         {
             allAgents[i] = agentsNativeArray[i];
+            allAgentTransforms[i].forward = allAgents[i].flightDirection;
         }
 
         agentsNativeArray.Dispose();
         transformAccessArray.Dispose();
     }
 
-    public void SpawnAgent()
+    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
-        newAgent.transform.position = new Vector3(2, 0, .5f);
-        Agent toAdd = new Agent() { 
-            flightDirection = new Vector3 (-1, 0, 0),
-            colliderSize = .5f,
-            position = newAgent.transform.position,
-            mass = 1
+        newAgent.transform.position = spawnPoint;
+        Agent toAdd = new Agent() {
+            position = spawnPoint,
+            colliderSize = type.GetColliderSize(),
+            mass = type.GetMass(),
+            dragCoefficient = type.GetDragCoefficient(),
+            engineMaxStrenght = type.GetEngineStrenght(),
+            agentMaxHP = type.GetHp(),
+            agentHP = type.GetHp(),
         };
-        allAgentTransforms.Add(newAgent.transform);
-        allAgents.Add(toAdd);
+        
+        //string agentName = AgentNames.GetRandomName();
+        toAdd.id = GetNextId();
+        newAgent.transform.name = toAdd.id.ToString();
+        agentNames.Add(toAdd.id, AgentNames.GetRandomName());
 
-
-        newAgent = AgentPooling.Instance.NewAgentFromPool();
-        newAgent.transform.position = new Vector3(-2, 0, 0);
-        toAdd = new Agent()
-        {
-            flightDirection = new Vector3(1, 0, 0),
-            colliderSize = .5f,
-            position = newAgent.transform.position,
-            mass = 1
-        };
         allAgentTransforms.Add(newAgent.transform);
         allAgents.Add(toAdd);
     }
@@ -126,6 +137,21 @@ public class AgentManager : MonoBehaviour
         }
     }
 
+    int GetNextId()
+    {
+        return nextAgentId++;
+    }
+
+    public Agent GetAgentById(int id)
+    {
+        return allAgents.Find(x => x.id == id);
+    }
+
+    public string GetAgentNameByID(int id)
+    {
+        return agentNames[id];
+    }
+
     public int GetAgentCount()
     {
         return agentCount;
@@ -138,5 +164,10 @@ public class AgentManager : MonoBehaviour
         {
             Gizmos.DrawWireSphere(agent.position, agent.colliderSize);
         }
+
+        Gizmos.color = Color.red;
+
+        Gizmos.DrawWireCube(playfieldCenter, new Vector3(playfieldSize.x, playfieldSize.y, playfieldSize.z));
+
     }
 }
