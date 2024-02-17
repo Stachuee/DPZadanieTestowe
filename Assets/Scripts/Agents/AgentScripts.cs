@@ -15,7 +15,7 @@ public struct Agent
     public Vector3 steeringDirection; // normalized
     public float steerPower;
     public float colliderSize;
-    public bool colision;
+    public float mass;
 }
 
 [BurstCompile]
@@ -47,11 +47,12 @@ public struct AgentSteering : IJobParallelForTransform
 public struct AgentCollision : IJob
 {
     NativeArray<Agent> agents;
-
+    [ReadOnly] float coefficientOfRestitution;
 
     public AgentCollision(NativeArray<Agent> _agents)
     {
         agents = _agents;
+        coefficientOfRestitution = 0;
     }
 
     public void Execute()
@@ -72,12 +73,18 @@ public struct AgentCollision : IJob
                     float agentDistance = delta.magnitude;
                     if(agentDistance < agentOne.colliderSize + agentTwo.colliderSize)
                     {
-                        Vector3 moveVector = delta.normalized * (agentDistance - (agentOne.colliderSize + agentTwo.colliderSize)) *.5f;
+                        Vector3 deltaNormalized = delta.normalized;
+                        Vector3 moveVector = deltaNormalized * (agentDistance - (agentOne.colliderSize + agentTwo.colliderSize)) *.5f;
                         agentOne.position += moveVector;
                         agentTwo.position += -moveVector;
 
-                        agentOne.colision = true;
-                        agentTwo.colision = true;
+                        float systemMass = 1 / ((1 / agentOne.mass) + (1 / agentTwo.mass));
+                        float impactSpeed = Vector3.Dot(deltaNormalized, (agentOne.flightDirection - agentTwo.flightDirection));
+                        float impulseMagnitude = (1 + coefficientOfRestitution) * systemMass * impactSpeed;
+
+                        agentOne.flightDirection = -(impulseMagnitude / agentOne.mass) * deltaNormalized;
+                        agentTwo.flightDirection = (impulseMagnitude / agentTwo.mass) * deltaNormalized;
+
                         agents[i] = agentOne;
                         agents[j] = agentTwo;
                     }

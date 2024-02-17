@@ -78,11 +78,12 @@ public class AgentManager : MonoBehaviour
     public void SpawnAgent()
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
-        newAgent.transform.position = new Vector3(2, 0, 0);
+        newAgent.transform.position = new Vector3(2, 0, .5f);
         Agent toAdd = new Agent() { 
             flightDirection = new Vector3 (-1, 0, 0),
             colliderSize = .5f,
             position = newAgent.transform.position,
+            mass = 1
         };
         allAgentTransforms.Add(newAgent.transform);
         allAgents.Add(toAdd);
@@ -95,6 +96,7 @@ public class AgentManager : MonoBehaviour
             flightDirection = new Vector3(1, 0, 0),
             colliderSize = .5f,
             position = newAgent.transform.position,
+            mass = 1
         };
         allAgentTransforms.Add(newAgent.transform);
         allAgents.Add(toAdd);
