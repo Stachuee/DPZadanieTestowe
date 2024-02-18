@@ -127,10 +127,16 @@ public class AgentManager : MonoBehaviour
         Agent toAdd = new Agent() {
             position = spawnPoint,
             squadron = squadron,
+            up = new Vector3(0, 1, 0),
+            forward = new Vector3(1, 0, 0),
             colliderSize = type.GetColliderSize(),
             mass = type.GetMass(),
             dragCoefficient = type.GetDragCoefficient(),
             engineMaxStrenght = type.GetEngineStrenght(),
+            breakingStrenght = type.GetBreakingStrenght(),
+            maneuverabilityHorizontal = type.GetManeuverabilityHorizontal(),
+            maneuverabilityVertical = type.GetManeuverabilityVertical(),
+            rollSpeed = type.GetRollSpeed(),
             agentMaxHP = type.GetHp(),
             agentHP = type.GetHp(),
             avoidenenceRange = type.GetAvoidenenceRange(),
@@ -195,6 +201,8 @@ public class AgentManager : MonoBehaviour
         foreach (Agent agent in allAgents)
         {
             Gizmos.DrawWireSphere(agent.position, agent.colliderSize);
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(agent.position, agent.position + agent.steeringVector);
         }
 
         Gizmos.color = Color.white;

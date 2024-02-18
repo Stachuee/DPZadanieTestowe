@@ -14,10 +14,12 @@ public struct Agent
     public float agentHP;
     public float agentMaxHP;
 
-    public bool squadronOfficer;
     public int squadron;
 
     public Vector3 position;
+    public Vector3 forward;
+    public Vector3 up;
+
     public Vector3 flightDirection;
     public Vector3 prevFrameFlightDirection;
 
@@ -30,9 +32,19 @@ public struct Agent
     public float mass;
     public float dragCoefficient;
     public float engineMaxStrenght;
+    public float breakingStrenght;
+
+    public float maneuverabilityVertical;
+    public float maneuverabilityHorizontal;
+    public float rollSpeed;
+
 
     public float acceleration;
     public float velocity;
+    public float throttle;
+    public float breaks;
+
+    public Vector3 steeringVector;
 
 }
 
@@ -84,15 +96,7 @@ public struct AgentSteering : IJobParallelForTransform
         steering += AvoidAgents(readOnlyAgents, index);
         steering += KeepFormation(squadronOrders, agent);
 
-        if(steering.magnitude > 0.05f)
-        {
-            steering = steering.normalized;
-        }
-        else
-        {
-            steering = -agent.flightDirection.normalized;
-        }
-
+        agent = Steer(agent, steering);
 
 
         float agentspeed = agent.flightDirection.magnitude;
@@ -103,7 +107,10 @@ public struct AgentSteering : IJobParallelForTransform
         float steeringForce = agent.engineMaxStrenght;
         float dragForce = fluidDensity * math.pow(agentspeed, 2) * agent.dragCoefficient * (2 * math.PI * agent.colliderSize) / 2;
 
-        Vector3 finalMoveForce = agentFlightNormilized * flightForce + steering * steeringForce + -agentFlightNormilized * dragForce;
+        Vector3 finalMoveForce = agentFlightNormilized * flightForce +
+            agent.forward * steeringForce * agent.throttle 
+            + -agent.flightDirection * agent.breakingStrenght * agent.breaks
+            + -agentFlightNormilized * dragForce;
         
         agent.prevFrameFlightDirection = agent.flightDirection;
 
@@ -116,7 +123,7 @@ public struct AgentSteering : IJobParallelForTransform
 
 
         transform.position += agent.flightDirection  * deltaTime;
-        if(agent.flightDirection.x != 0 || agent.flightDirection.y != 0) transform.rotation = Quaternion.LookRotation(agent.flightDirection.normalized, Vector3.up);
+        if(agent.flightDirection.x != 0 || agent.flightDirection.y != 0) transform.rotation = Quaternion.LookRotation(agent.forward, agent.up);
         agent.position = transform.position;
 
         agents[index] = agent;
@@ -180,13 +187,13 @@ public struct AgentSteering : IJobParallelForTransform
                 {
                     formationVector = rallyPointDirectionVector.normalized;
                     formationSweetSpot = SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS * 2 / 3;
-                    formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
+                    //formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
                 }
                 else if((myOrders.formation == SquadronOrders.Formation.Offensive && distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS))
                 {
                     formationVector = rallyPointDirectionVector.normalized;
                     formationSweetSpot = SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS * 2 / 3;
-                    formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
+                   //formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
                 }
 
 
@@ -198,12 +205,45 @@ public struct AgentSteering : IJobParallelForTransform
         return formationVector;
     }
 
+    Agent Steer(Agent agent, Vector3 steerDirection)
+    {
+        if(steerDirection.magnitude < 0.05f)
+        {
+            agent.throttle = 0;
+            agent.breaks = 1;
+            agent.up = Vector3.RotateTowards(agent.up, Vector3.up, agent.rollSpeed * deltaTime, 0);
+            return agent;
+        }
+
+        steerDirection = steerDirection.normalized;
+        agent.throttle = 1;
+        agent.breaks = 0;
+
+        bool targetInFront = Vector3.Dot(agent.forward, steerDirection) >= 0;
+        Vector3 steerProjected = Vector3.ProjectOnPlane(steerDirection, agent.forward);
+        Vector3 steerProjectedNormalized = steerProjected.normalized;
+
+        agent.up = Vector3.RotateTowards(agent.up, steerProjectedNormalized, agent.rollSpeed * deltaTime, 0) * (Vector3.Dot(steerProjectedNormalized, agent.up) >= 0 ? 1 : -1);
+
+        float horizontalPower = math.abs(Vector3.Angle(agent.up, steerProjectedNormalized) % 180 - 90) / 90;
+
+        Vector3 steerPower = (targetInFront ? steerProjected : steerProjectedNormalized ) * (agent.maneuverabilityHorizontal * horizontalPower + agent.maneuverabilityVertical * (1 - horizontalPower));
+
+        Vector3 steerPowerNormalized = agent.forward * math.sqrt(1 - steerPower.magnitude) + steerPower;
+
+        agent.forward = Vector3.RotateTowards(agent.forward, steerPowerNormalized, agent.rollSpeed * deltaTime, 0);
+
+        agent.steeringVector = steerPowerNormalized;
+
+        return agent;
+    }
+
     /// <summary>
     /// Check if breaking is needed in order to prevent ramming.
     /// </summary>
     float ControllThrottle(Agent agent, float distance)
     {
-        float acceleration = agent.engineMaxStrenght / agent.mass;
+        float acceleration = agent.breakingStrenght / agent.mass;
         float timeToStop = agent.velocity / acceleration;
         float timeRemain = distance / agent.velocity;
         return timeToStop < timeRemain ? 1 : -1;

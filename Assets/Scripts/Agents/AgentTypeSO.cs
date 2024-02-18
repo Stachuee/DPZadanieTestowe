@@ -6,12 +6,17 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Agent", menuName = "ScriptableObjects/Agent", order = 1)]
 public class AgentTypeSO : ScriptableObject
 {
-    [SerializeField] float mass;
-    [SerializeField] float agentMaxHP;
-    [SerializeField] float colliderSize;
-    [SerializeField] float dragCoefficient;
-    [SerializeField] float engineMaxStrenght;
-    [SerializeField] float avoidenenceRange;
+    [SerializeField, Min(0)] float mass;
+    [SerializeField, Min(0)] float agentMaxHP;
+    [SerializeField, Min(0)] float colliderSize;
+    [SerializeField, Min(0)] float dragCoefficient;
+    [SerializeField, Min(0)] float engineMaxStrenght;
+    [SerializeField, Min(0)] float breakingStrenght;
+    [SerializeField, Min(0)] float avoidenenceRange;
+
+    [SerializeField, Min(0)] float maneuverabilityVertical;
+    [SerializeField, Min(0)] float maneuverabilityHorizontal;
+    [SerializeField, Min(0)] float rollSpeed;
 
 
     public float GetMass()
@@ -37,5 +42,22 @@ public class AgentTypeSO : ScriptableObject
     public float GetAvoidenenceRange()
     { 
         return avoidenenceRange;
+    }
+    public float GetBreakingStrenght()
+    {
+        return breakingStrenght;
+    }
+
+    public float GetManeuverabilityVertical()
+    {
+        return maneuverabilityVertical;
+    }
+    public float GetManeuverabilityHorizontal()
+    {
+        return maneuverabilityHorizontal;
+    }
+    public float GetRollSpeed()
+    {
+        return rollSpeed;
     }
 }
