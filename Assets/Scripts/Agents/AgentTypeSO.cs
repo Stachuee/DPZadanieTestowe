@@ -11,6 +11,7 @@ public class AgentTypeSO : ScriptableObject
     [SerializeField] float colliderSize;
     [SerializeField] float dragCoefficient;
     [SerializeField] float engineMaxStrenght;
+    [SerializeField] float avoidenenceRange;
 
 
     public float GetMass()
@@ -32,5 +33,9 @@ public class AgentTypeSO : ScriptableObject
     public float GetEngineStrenght()
     {
         return engineMaxStrenght;
+    }
+    public float GetAvoidenenceRange()
+    { 
+        return avoidenenceRange;
     }
 }

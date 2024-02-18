@@ -24,6 +24,7 @@ public class AgentManager : MonoBehaviour
     int nextAgentId = 0;
 
     NativeArray<Agent> agentsNativeArray;
+    NativeArray<Agent> readOnlyAgentsNativeArray;
     TransformAccessArray transformAccessArray;
 
     JobHandle agentSteeringHandle;
@@ -46,7 +47,7 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
-        SpawnAgent(toSpawn, new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x)/2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2));
+        for (int i = 0; i < agentCount; i++)SpawnAgent(toSpawn, new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x)/2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2));
     }
 
 
@@ -55,6 +56,7 @@ public class AgentManager : MonoBehaviour
         SortAgents();
 
         agentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
+        readOnlyAgentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
         transformAccessArray = new TransformAccessArray(allAgentTransforms.ToArray());
 
         AgentCollision agentCollisionJob = new AgentCollision(agentsNativeArray);
@@ -67,6 +69,7 @@ public class AgentManager : MonoBehaviour
         }
 
         AgentSteering agentSteeringJob = new AgentSteering(agentsNativeArray, 
+            readOnlyAgentsNativeArray,
             Time.deltaTime,
             playfieldSize,
             playfieldCenter
@@ -83,11 +86,13 @@ public class AgentManager : MonoBehaviour
         for(int i = 0; i < allAgents.Count; i++)
         {
             allAgents[i] = agentsNativeArray[i];
-            allAgentTransforms[i].forward = allAgents[i].flightDirection;
+            //allAgentTransforms[i].rotation = Quaternion.LookRotation(allAgents[i].flightDirection.normalized, Vector3.up);
+            //if(allAgents[i].flightDirection != Vector3.zero) allAgentTransforms[i].forward = allAgents[i].flightDirection;
         }
 
         agentsNativeArray.Dispose();
         transformAccessArray.Dispose();
+        readOnlyAgentsNativeArray.Dispose();
     }
 
     public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint)
@@ -102,6 +107,7 @@ public class AgentManager : MonoBehaviour
             engineMaxStrenght = type.GetEngineStrenght(),
             agentMaxHP = type.GetHp(),
             agentHP = type.GetHp(),
+            avoidenenceRange = type.GetAvoidenenceRange(),
         };
         
         //string agentName = AgentNames.GetRandomName();
