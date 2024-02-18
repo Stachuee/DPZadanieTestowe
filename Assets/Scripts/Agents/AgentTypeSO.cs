@@ -17,6 +17,7 @@ public class AgentTypeSO : ScriptableObject
     [SerializeField, Min(0)] float maneuverabilityVertical;
     [SerializeField, Min(0)] float maneuverabilityHorizontal;
     [SerializeField, Min(0)] float rollSpeed;
+    [SerializeField, Min(0)] float scannerRange;
 
 
     public float GetMass()
@@ -59,5 +60,9 @@ public class AgentTypeSO : ScriptableObject
     public float GetRollSpeed()
     {
         return rollSpeed;
+    }
+    public float GetScannerRange()
+    {
+        return scannerRange;
     }
 }

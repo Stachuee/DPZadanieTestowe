@@ -892,6 +892,7 @@ GameObject:
   - component: {fileID: 1429370084}
   - component: {fileID: 1429370083}
   - component: {fileID: 1429370082}
+  - component: {fileID: 1429370085}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -929,7 +930,7 @@ MonoBehaviour:
   allAgents: []
   orders: []
   playfieldCenter: {x: 0, y: 0, z: 0}
-  playfieldSize: {x: 100, y: 100, z: 100}
+  playfieldSize: {x: 10, y: 10, z: 10}
   toSpawn: {fileID: 11400000, guid: 9618d604e6044e44a8eddd3579986d9d, type: 2}
 --- !u!4 &1429370084
 Transform:
@@ -940,12 +941,27 @@ Transform:
   m_GameObject: {fileID: 1429370081}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.9050455, y: -3.857918, z: -0.8019293}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1429370085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1429370081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0b0000fac1899448294024b5d48f55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _teamMats:
+  - {fileID: 2100000, guid: 4878532faace7dc4d960b6c6145328bd, type: 2}
+  - {fileID: 2100000, guid: 5028e93c8a4d9324197b26786b537454, type: 2}
 --- !u!1 &1637448187
 GameObject:
   m_ObjectHideFlags: 0

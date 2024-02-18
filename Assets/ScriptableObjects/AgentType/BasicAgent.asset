@@ -22,3 +22,4 @@ MonoBehaviour:
   maneuverabilityVertical: 1
   maneuverabilityHorizontal: 0.5
   rollSpeed: 1
+  scannerRange: 7

@@ -50,9 +50,9 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 2; i++)
         {
-            SpawnDivision(10, i);
+            SpawnDivision(1, i, i%2);
         }
     }
 
@@ -94,8 +94,6 @@ public class AgentManager : MonoBehaviour
         for(int i = 0; i < allAgents.Count; i++)
         {
             allAgents[i] = agentsNativeArray[i];
-            //allAgentTransforms[i].rotation = Quaternion.LookRotation(allAgents[i].flightDirection.normalized, Vector3.up);
-            //if(allAgents[i].flightDirection != Vector3.zero) allAgentTransforms[i].forward = allAgents[i].flightDirection;
         }
 
         agentsNativeArray.Dispose();
@@ -104,12 +102,13 @@ public class AgentManager : MonoBehaviour
         ordersNativeArray.Dispose();
     }
 
-    public void SpawnDivision(int unitCount, int divisionID)
+    public void SpawnDivision(int unitCount, int divisionID, int teamID)
     {
         for (int i = 0; i < unitCount; i++)
             SpawnAgent(toSpawn,
                 new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
-                divisionID
+                divisionID,
+                teamID
                 );
         SquadronOrders order = new SquadronOrders()
         {
@@ -120,13 +119,15 @@ public class AgentManager : MonoBehaviour
         orders.Add(order);
     }
 
-    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint, int squadron)
+    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint, int squadron, int team)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
+        newAgent.GetComponent<AgentInnit>().Innit(team);
         newAgent.transform.position = spawnPoint;
         Agent toAdd = new Agent() {
             position = spawnPoint,
             squadron = squadron,
+            agentTeam = team,
             up = new Vector3(0, 1, 0),
             forward = new Vector3(1, 0, 0),
             colliderSize = type.GetColliderSize(),
@@ -140,6 +141,7 @@ public class AgentManager : MonoBehaviour
             agentMaxHP = type.GetHp(),
             agentHP = type.GetHp(),
             avoidenenceRange = type.GetAvoidenenceRange(),
+            scannerRange = type.GetScannerRange(),
         };
         
         //string agentName = AgentNames.GetRandomName();

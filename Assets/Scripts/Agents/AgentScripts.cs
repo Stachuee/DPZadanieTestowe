@@ -10,12 +10,12 @@ using Unity.Burst;
 [System.Serializable]
 public struct Agent
 {
-    public enum AgentState {Iddle, Pursue }
+    public enum AgentState {Iddle, Defend, Pursue }
 
     public int id;
     public float agentHP;
     public float agentMaxHP;
-    //public int agentTeam;
+    public int agentTeam;
     public AgentState agentState;
 
     public Vector3 targetVector;
@@ -43,7 +43,6 @@ public struct Agent
     public float maneuverabilityVertical;
     public float maneuverabilityHorizontal;
     public float rollSpeed;
-
 
     public float acceleration;
     public float velocity;
@@ -143,14 +142,14 @@ public struct AgentSteering : IJobParallelForTransform
         return Vector3.zero;
     }
 
-    Vector3 AvoidAgents(NativeArray<Agent> agents, int id)
+    Vector3 AvoidAgents(int id)
     {
         Vector3 avoidenence = Vector3.zero;
-        Agent agentOne = agents[id];
+        Agent agentOne = readOnlyAgents[id];
 
-        for(int i = 0; i < agents.Length; i++)
+        for(int i = 0; i < readOnlyAgents.Length; i++)
         {
-            Agent agentTwo = agents[i];
+            Agent agentTwo = readOnlyAgents[i];
             if(agentTwo.position.x > agentOne.position.x + agentOne.avoidenenceRange)
             {
                 break;
@@ -169,28 +168,40 @@ public struct AgentSteering : IJobParallelForTransform
         return avoidenence;
     }
 
-    Vector3 KeepFormation(NativeArray<SquadronOrders> orders, Agent agent)
+
+    Vector3 KeepFormation(Agent agent)
     {
         Vector3 formationVector = Vector3.zero;
 
-        for(int i = 0; i < orders.Length; i++)
+        for(int i = 0; i < squadronOrders.Length; i++)
         {
-            if(orders[i].squdronID == agent.squadron)
+            if(squadronOrders[i].squdronID == agent.squadron)
             {
-                SquadronOrders myOrders = orders[i];
+                SquadronOrders myOrders = squadronOrders[i];
 
                 Vector3 rallyPointDirectionVector = (myOrders.rallyPoint - agent.position);
                 float distance = rallyPointDirectionVector.magnitude;
 
-                if (myOrders.formation == SquadronOrders.Formation.Defensive && distance > SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                if (myOrders.formation == SquadronOrders.Formation.Defensive)
                 {
-                    formationVector = rallyPointDirectionVector.normalized;
-                    agent.target = myOrders.rallyPoint;
+                    if (distance > SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                    {
+                        formationVector = rallyPointDirectionVector.normalized;
+                        agent.target = myOrders.rallyPoint;
+                    }
+                    agent.agentState = Agent.AgentState.Defend;
                 }
-                else if(myOrders.formation == SquadronOrders.Formation.Offensive && agent.agentState == Agent.AgentState.Iddle && distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                else if(myOrders.formation == SquadronOrders.Formation.Offensive)
                 {
-                    formationVector = rallyPointDirectionVector.normalized;
-                    agent.target = myOrders.rallyPoint;
+                    if(agent.agentState == Agent.AgentState.Iddle && distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                    {
+                        formationVector = rallyPointDirectionVector.normalized;
+                        agent.target = myOrders.rallyPoint;
+                    }
+                    else if(agent.agentState == Agent.AgentState.Defend)
+                    {
+                        agent.agentState = Agent.AgentState.Iddle;
+                    }
                 }
 
 
@@ -202,6 +213,26 @@ public struct AgentSteering : IJobParallelForTransform
         return formationVector;
     }
 
+
+
+    Vector3 FollowTarget(Agent agent, int agentID)
+    {
+        Vector3 follow = Vector3.zero;
+        if(agent.agentState == Agent.AgentState.Iddle || agent.agentState == Agent.AgentState.Pursue)
+        {
+            bool inRange;
+            float distance;
+            int targetID = GetClosestEnemyAgentID(agentID, out inRange, out distance);
+
+            if(inRange)
+            {
+                follow = (readOnlyAgents[targetID].position - agent.position).normalized;
+                agent.agentState = Agent.AgentState.Pursue;
+            }
+        }
+        return follow;
+    }
+
     Agent Steer(Agent agent, int index)
     {
 
@@ -209,8 +240,9 @@ public struct AgentSteering : IJobParallelForTransform
         Vector3 targetSteering = Vector3.zero;
 
         avoidenenceSteering += AvoidBounds(agent);
-        avoidenenceSteering += AvoidAgents(readOnlyAgents, index);
-        targetSteering += KeepFormation(squadronOrders, agent);
+        avoidenenceSteering += AvoidAgents(index);
+        targetSteering += KeepFormation(agent);
+        targetSteering += FollowTarget(agent, index);
         agent.targetVector = targetSteering;
 
         if (avoidenenceSteering.magnitude > 0.05f)
@@ -258,13 +290,49 @@ public struct AgentSteering : IJobParallelForTransform
         
         if(!targetInFront)
         {
-            agent.throttle = 0;
-            agent.breaks = 1;
+            agent.throttle = .5f;
+            agent.breaks = .5f;
         }
 
         agent.steeringVector = steerPowerNormalized;
 
         return agent;
+    }
+
+
+    int GetClosestEnemyAgentID(int id, out bool inRange, out float distance)
+    {
+        Agent agentOne = readOnlyAgents[id];
+
+        float closestDistance = float.PositiveInfinity;
+
+        int closest = -1;
+        inRange = false;
+        distance = 0f;
+
+        for (int i = 0; i < readOnlyAgents.Length; i++)
+        {
+            Agent agentTwo = readOnlyAgents[i];
+            if (agentTwo.position.x > agentOne.position.x + agentOne.scannerRange)
+            {
+                break;
+            }
+            else if (id != i)
+            {
+                float currentDistance = Vector3.SqrMagnitude(agentOne.position - agentTwo.position);
+                if (currentDistance < closestDistance)
+                {
+                    closestDistance = currentDistance;
+                    closest = i;
+                }
+            }
+        }
+        if (closestDistance < float.PositiveInfinity)
+        {
+            distance = math.sqrt(closestDistance);
+            inRange = distance < agentOne.scannerRange;
+        }
+        return closest;
     }
 
     /// <summary>
