@@ -50,9 +50,9 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 100; i++)
         {
-            SpawnDivision(10, 0);
+            SpawnDivision(10, i);
         }
     }
 
@@ -114,7 +114,7 @@ public class AgentManager : MonoBehaviour
         SquadronOrders order = new SquadronOrders()
         {
             formation = SquadronOrders.Formation.Defensive,
-            rallyPoint = new Vector3(0, 0, 0),
+            rallyPoint = new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
             squdronID = divisionID
         };
         orders.Add(order);
