@@ -14,6 +14,9 @@ public struct Agent
     public float agentHP;
     public float agentMaxHP;
 
+    public bool squadronOfficer;
+    public int squadron;
+
     public Vector3 position;
     public Vector3 flightDirection;
     public Vector3 prevFrameFlightDirection;
@@ -29,9 +32,24 @@ public struct Agent
     public float engineMaxStrenght;
 
     public float acceleration;
-    public float speed;
+    public float velocity;
 
 }
+
+[System.Serializable]
+public struct SquadronOrders
+{
+    public static readonly float DEFENSIVE_FORMATION_ACCEPTED_RADIUS = 10;
+    public static readonly float OFFENSIVE_FORMATION_ACCEPTED_RADIUS = 25;
+
+    public enum Formation { Defensive, Offensive };
+    public int squdronID;
+    public Vector3 rallyPoint;
+    public Formation formation;
+}
+
+
+
 
 [BurstCompile]
 public struct AgentSteering : IJobParallelForTransform
@@ -41,11 +59,13 @@ public struct AgentSteering : IJobParallelForTransform
     [ReadOnly] Vector3 playfieldCenter;
     [ReadOnly] float fluidDensity;
     [ReadOnly] NativeArray<Agent> readOnlyAgents;
+    [ReadOnly] NativeArray<SquadronOrders> squadronOrders;
     NativeArray<Agent> agents;
 
 
-    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, float _deltaTime, Vector3 _playfieldSize, Vector3 _playfieldCenter)
+    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, NativeArray<SquadronOrders> _squadronOrders,  float _deltaTime, Vector3 _playfieldSize, Vector3 _playfieldCenter)
     {
+        squadronOrders = _squadronOrders;
         agents = _agents;
         readOnlyAgents = _readOnlyAgents;
         deltaTime = _deltaTime;
@@ -62,9 +82,17 @@ public struct AgentSteering : IJobParallelForTransform
 
         steering += AvoidBounds(agent);
         steering += AvoidAgents(readOnlyAgents, index);
+        steering += KeepFormation(squadronOrders, agent);
 
+        if(steering.magnitude > 0.05f)
+        {
+            steering = steering.normalized;
+        }
+        else
+        {
+            steering = -agent.flightDirection.normalized;
+        }
 
-        steering = steering.normalized;
 
 
         float agentspeed = agent.flightDirection.magnitude;
@@ -84,11 +112,11 @@ public struct AgentSteering : IJobParallelForTransform
         agent.flightDirection += acceleration * deltaTime;
 
         agent.acceleration = acceleration.magnitude;
-        agent.speed = agent.flightDirection.magnitude;
+        agent.velocity = agent.flightDirection.magnitude;
 
 
         transform.position += agent.flightDirection  * deltaTime;
-        transform.rotation = LookRotation(agent.flightDirection.normalized, Vector3.up);
+        if(agent.flightDirection.x != 0 || agent.flightDirection.y != 0) transform.rotation = Quaternion.LookRotation(agent.flightDirection.normalized, Vector3.up);
         agent.position = transform.position;
 
         agents[index] = agent;
@@ -134,62 +162,51 @@ public struct AgentSteering : IJobParallelForTransform
         return avoidenence;
     }
 
-    Quaternion LookRotation(Vector3 forward, Vector3 up)
+    Vector3 KeepFormation(NativeArray<SquadronOrders> orders, Agent agent)
     {
+        Vector3 formationVector = Vector3.zero;
 
-        forward = Vector3.Normalize(forward);
-        Vector3 right = Vector3.Normalize(Vector3.Cross(up, forward));
-        up = Vector3.Cross(forward, right);
-        var m00 = right.x;
-        var m01 = right.y;
-        var m02 = right.z;
-        var m10 = up.x;
-        var m11 = up.y;
-        var m12 = up.z;
-        var m20 = forward.x;
-        var m21 = forward.y;
-        var m22 = forward.z;
+        for(int i = 0; i < orders.Length; i++)
+        {
+            if(orders[i].squdronID == agent.squadron)
+            {
+                SquadronOrders myOrders = orders[i];
+
+                Vector3 rallyPointDirectionVector = (myOrders.rallyPoint - agent.position);
+                float distance = rallyPointDirectionVector.magnitude;
+                float formationSweetSpot;
+
+                if((myOrders.formation == SquadronOrders.Formation.Defensive && distance > SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS))
+                {
+                    formationVector = rallyPointDirectionVector.normalized;
+                    formationSweetSpot = SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS * 2 / 3;
+                    formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
+                }
+                else if((myOrders.formation == SquadronOrders.Formation.Offensive && distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS))
+                {
+                    formationVector = rallyPointDirectionVector.normalized;
+                    formationSweetSpot = SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS * 2 / 3;
+                    formationVector *= ControllThrottle(agent, distance - formationSweetSpot);
+                }
 
 
-        float num8 = (m00 + m11) + m22;
-        Quaternion quaternion = new Quaternion();
-        if (num8 > 0f)
-        {
-            var num = (float)math.sqrt(num8 + 1f);
-            quaternion.w = num * 0.5f;
-            num = 0.5f / num;
-            quaternion.x = (m12 - m21) * num;
-            quaternion.y = (m20 - m02) * num;
-            quaternion.z = (m01 - m10) * num;
-            return quaternion;
+                break;
+            }
         }
-        if ((m00 >= m11) && (m00 >= m22))
-        {
-            var num7 = (float)math.sqrt(((1f + m00) - m11) - m22);
-            var num4 = 0.5f / num7;
-            quaternion.x = 0.5f * num7;
-            quaternion.y = (m01 + m10) * num4;
-            quaternion.z = (m02 + m20) * num4;
-            quaternion.w = (m12 - m21) * num4;
-            return quaternion;
-        }
-        if (m11 > m22)
-        {
-            var num6 = (float)math.sqrt(((1f + m11) - m00) - m22);
-            var num3 = 0.5f / num6;
-            quaternion.x = (m10 + m01) * num3;
-            quaternion.y = 0.5f * num6;
-            quaternion.z = (m21 + m12) * num3;
-            quaternion.w = (m20 - m02) * num3;
-            return quaternion;
-        }
-        var num5 = (float)math.sqrt(((1f + m22) - m00) - m11);
-        var num2 = 0.5f / num5;
-        quaternion.x = (m20 + m02) * num2;
-        quaternion.y = (m21 + m12) * num2;
-        quaternion.z = 0.5f * num5;
-        quaternion.w = (m01 - m10) * num2;
-        return quaternion;
+
+
+        return formationVector;
+    }
+
+    /// <summary>
+    /// Check if breaking is needed in order to prevent ramming.
+    /// </summary>
+    float ControllThrottle(Agent agent, float distance)
+    {
+        float acceleration = agent.engineMaxStrenght / agent.mass;
+        float timeToStop = agent.velocity / acceleration;
+        float timeRemain = distance / agent.velocity;
+        return timeToStop < timeRemain ? 1 : -1;
     }
 }
 
@@ -202,7 +219,7 @@ public struct AgentCollision : IJob
     public AgentCollision(NativeArray<Agent> _agents)
     {
         agents = _agents;
-        coefficientOfRestitution = 0;
+        coefficientOfRestitution = -0.5f;
     }
 
     public void Execute()

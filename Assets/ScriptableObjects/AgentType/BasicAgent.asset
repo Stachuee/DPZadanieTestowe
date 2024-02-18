@@ -16,5 +16,5 @@ MonoBehaviour:
   agentMaxHP: 5
   colliderSize: 0.5
   dragCoefficient: 0.47
-  engineMaxStrenght: 3000
+  engineMaxStrenght: 1000
   avoidenenceRange: 3

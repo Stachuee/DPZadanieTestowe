@@ -925,8 +925,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f299c203f52381746b227adc88d794db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentCount: 5000
+  agentCount: 10
   allAgents: []
+  orders: []
   playfieldCenter: {x: 0, y: 0, z: 0}
   playfieldSize: {x: 100, y: 100, z: 100}
   toSpawn: {fileID: 11400000, guid: 9618d604e6044e44a8eddd3579986d9d, type: 2}

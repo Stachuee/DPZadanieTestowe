@@ -14,6 +14,8 @@ public class AgentManager : MonoBehaviour
     [SerializeField]
     List<Agent> allAgents = new List<Agent>();
     List<Transform> allAgentTransforms = new List<Transform>();
+    [SerializeField]
+    List<SquadronOrders> orders = new List<SquadronOrders>();
 
     Dictionary<int, string> agentNames = new Dictionary<int, string>(); // remember to remove names after destroying agent
 
@@ -25,6 +27,7 @@ public class AgentManager : MonoBehaviour
 
     NativeArray<Agent> agentsNativeArray;
     NativeArray<Agent> readOnlyAgentsNativeArray;
+    NativeArray<SquadronOrders> ordersNativeArray;
     TransformAccessArray transformAccessArray;
 
     JobHandle agentSteeringHandle;
@@ -47,7 +50,10 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
-        for (int i = 0; i < agentCount; i++)SpawnAgent(toSpawn, new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x)/2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2));
+        for (int i = 0; i < 1; i++)
+        {
+            SpawnDivision(10, 0);
+        }
     }
 
 
@@ -57,6 +63,7 @@ public class AgentManager : MonoBehaviour
 
         agentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
         readOnlyAgentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
+        ordersNativeArray = new NativeArray<SquadronOrders>(orders.ToArray(), Allocator.TempJob);
         transformAccessArray = new TransformAccessArray(allAgentTransforms.ToArray());
 
         AgentCollision agentCollisionJob = new AgentCollision(agentsNativeArray);
@@ -70,6 +77,7 @@ public class AgentManager : MonoBehaviour
 
         AgentSteering agentSteeringJob = new AgentSteering(agentsNativeArray, 
             readOnlyAgentsNativeArray,
+            ordersNativeArray,
             Time.deltaTime,
             playfieldSize,
             playfieldCenter
@@ -93,14 +101,32 @@ public class AgentManager : MonoBehaviour
         agentsNativeArray.Dispose();
         transformAccessArray.Dispose();
         readOnlyAgentsNativeArray.Dispose();
+        ordersNativeArray.Dispose();
     }
 
-    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint)
+    public void SpawnDivision(int unitCount, int divisionID)
+    {
+        for (int i = 0; i < unitCount; i++)
+            SpawnAgent(toSpawn,
+                new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
+                divisionID
+                );
+        SquadronOrders order = new SquadronOrders()
+        {
+            formation = SquadronOrders.Formation.Defensive,
+            rallyPoint = new Vector3(0, 0, 0),
+            squdronID = divisionID
+        };
+        orders.Add(order);
+    }
+
+    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint, int squadron)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
         newAgent.transform.position = spawnPoint;
         Agent toAdd = new Agent() {
             position = spawnPoint,
+            squadron = squadron,
             colliderSize = type.GetColliderSize(),
             mass = type.GetMass(),
             dragCoefficient = type.GetDragCoefficient(),
@@ -171,9 +197,18 @@ public class AgentManager : MonoBehaviour
             Gizmos.DrawWireSphere(agent.position, agent.colliderSize);
         }
 
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.white;
 
         Gizmos.DrawWireCube(playfieldCenter, new Vector3(playfieldSize.x, playfieldSize.y, playfieldSize.z));
 
+        foreach (SquadronOrders order in orders)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawSphere(order.rallyPoint, 1);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(order.rallyPoint, SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(order.rallyPoint, SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS);
+        }
     }
 }
