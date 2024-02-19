@@ -27,6 +27,9 @@ public class AgentManager : MonoBehaviour
 
 
     int nextAgentId = 0;
+    [SerializeField, Min(1)] int bulletsChunks;
+    int currentBulletChunkCheck;
+    int currentBulletChunk;
 
     NativeArray<Agent> agentsNativeArray;
     NativeArray<Agent> readOnlyAgentsNativeArray;
@@ -71,7 +74,7 @@ public class AgentManager : MonoBehaviour
 
         for (int i = 0; i < 2; i++)
         {
-            SpawnDivision(1, i, i%2);
+            SpawnDivision(500, i, i%2);
         }
     }
 
@@ -110,10 +113,15 @@ public class AgentManager : MonoBehaviour
         agentSteeringHandle = agentSteeringJob.Schedule(transformAccessArray);
 
 
+        currentBulletChunkCheck = (currentBulletChunkCheck + 1) % bulletsChunks;
+
         MoveBullets moveBullets = new MoveBullets(
             bulletsNativeArray,
+            readOnlyAgentsNativeArray,
             Time.time,
-            Time.deltaTime);
+            Time.deltaTime,
+            currentBulletChunk
+            );
 
         bulletHandle = moveBullets.Schedule(bulletsNativeArray.Length, 32);
         
@@ -132,13 +140,18 @@ public class AgentManager : MonoBehaviour
             {
                 Agent shooter = allAgents[i];
                 shooter.blaster.fired = false;
-                bullets.Add(new Bullet()
-                {
-                    destroyTime = Time.time + shooter.blaster.missleLifetime,
-                    speed = shooter.blaster.missleSpeed,
-                    transformMatrix = Matrix4x4.TRS(shooter.position, Quaternion.LookRotation(shooter.blaster.barrelOrientation, allAgents[i].up), Vector3.one/5),
-                });
 
+                currentBulletChunk = (currentBulletChunk + 1) % bulletsChunks;
+
+                bullets.Add(new Bullet(
+                    shooter.position + shooter.blaster.barrelOrientation * shooter.colliderSize * 1.5f,
+                    Quaternion.LookRotation(shooter.blaster.barrelOrientation, allAgents[i].up),
+                    Vector3.one / 5,
+                    shooter.blaster.missleSpeed,
+                    shooter.blaster.damage,
+                    Time.time,
+                    Time.time + shooter.blaster.missleLifetime,
+                    currentBulletChunk));
 
                 allAgents[i] = shooter;
             }
@@ -150,6 +163,8 @@ public class AgentManager : MonoBehaviour
         }
 
         ClearBullets();
+        ClearAgents();
+
         DrawBullets();
 
 
@@ -225,12 +240,41 @@ public class AgentManager : MonoBehaviour
         allAgents.Add(toAdd);
     }
 
-    public void ClearBullets()
+    void ClearBullets()
     {
+        bullets.ForEach(x =>
+        {
+            if(x.destroy && x.hitID != -1)
+            {
+                Agent agent = allAgents[x.hitID];
+                agent.agentHP -= x.damage;
+                allAgents[x.hitID] = agent;
+            }
+        });
         bullets.RemoveAll(x => x.destroy);
     }
 
-    public void DrawBullets()
+    void ClearAgents()
+    {
+        List<int> toRemove = new List<int>();
+
+        for (int i = 0; i < allAgents.Count; i++)
+        {
+            if (allAgents[i].agentHP <= 0)
+            {
+                toRemove.Add(i);
+            }
+        }
+
+        for(int i = toRemove.Count - 1; i >= 0; i--)
+        {
+            allAgents.RemoveAt(i);
+            AgentPooling.Instance.ReturnAgentToPool(allAgentTransforms[i].gameObject);
+            allAgentTransforms.RemoveAt(i);
+        }
+    }
+
+    void DrawBullets()
     {
         bullets.ForEach(bullet =>
         {

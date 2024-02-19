@@ -931,7 +931,8 @@ MonoBehaviour:
   orders: []
   bullets: []
   playfieldCenter: {x: 0, y: 0, z: 0}
-  playfieldSize: {x: 2, y: 2, z: 2}
+  playfieldSize: {x: 100, y: 100, z: 100}
+  bulletsChunks: 2
   toSpawn: {fileID: 11400000, guid: 9618d604e6044e44a8eddd3579986d9d, type: 2}
   blaster: {fileID: 11400000, guid: d77db62e8112fea419641eaa7f722df8, type: 2}
   bulletMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}

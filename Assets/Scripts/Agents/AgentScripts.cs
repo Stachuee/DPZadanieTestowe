@@ -364,7 +364,7 @@ public struct AgentSteering : IJobParallelForTransform
             {
                 break;
             }
-            else if (id != i)
+            else if (id != i && agentOne.agentTeam != agentTwo.agentTeam)
             {
                 float currentDistance = Vector3.SqrMagnitude(agentOne.position - agentTwo.position);
                 if (currentDistance < closestDistance)
