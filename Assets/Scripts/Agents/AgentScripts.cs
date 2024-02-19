@@ -10,14 +10,11 @@ using Unity.Burst;
 [System.Serializable]
 public struct Agent
 {
-    public enum AgentState {Iddle, Defend, Pursue }
-
     public int id;
     public float agentHP;
     public float agentMaxHP;
     public int agentTeam;
-    public AgentState agentState;
-
+    public float captureRate;
 
     public int squadron;
 
@@ -84,17 +81,70 @@ public struct Blaster
 
 
 [System.Serializable]
-public struct SquadronOrders
+public struct Squadron
 {
-    public static readonly float DEFENSIVE_FORMATION_ACCEPTED_RADIUS = 10;
-    public static readonly float OFFENSIVE_FORMATION_ACCEPTED_RADIUS = 25;
+    public static readonly float DEFENSIVE_FORMATION_ACCEPTED_RADIUS = 5;
+    public static readonly float OFFENSIVE_FORMATION_ACCEPTED_RADIUS = 10;
 
     public enum Formation { Defensive, Offensive };
     public int squdronID;
     public Vector3 rallyPoint;
     public Formation formation;
+
+    public Vector3 squadronCenter;
+    public int squadronUnitCount;
 }
 
+[BurstCompile]
+public struct SquadronUtil : IJob
+{
+    NativeArray<Squadron> squadrons;
+    [ReadOnly] NativeArray<Agent> agents;
+
+    public SquadronUtil(NativeArray<Squadron> _squadron, NativeArray<Agent> _agents)
+    {
+        squadrons = _squadron;
+        agents = _agents;
+    }
+
+    public void Execute() //very bad fix pls
+    {
+
+        for (int index = 0; index < squadrons.Length; index++)
+        {
+            Squadron squadron = squadrons[index];
+
+            squadron.squadronCenter = Vector3.zero;
+            squadron.squadronUnitCount = 0;
+            
+            squadrons[index] = squadron;
+        }
+
+        for (int i = 0; i < agents.Length; i++)
+        {
+            Squadron squadron = squadrons[agents[i].squadron];
+            
+            squadron.squadronUnitCount++;
+            squadron.squadronCenter += agents[i].position;
+
+            squadrons[agents[i].squadron] = squadron;
+        }
+
+        for (int index = 0; index < squadrons.Length; index++)
+        {
+            Squadron squadron = squadrons[index];
+
+            if (squadron.squadronUnitCount > 0)
+            {
+                squadron.squadronCenter = squadron.squadronCenter / squadron.squadronUnitCount;
+            }
+
+            squadrons[index] = squadron;
+        }
+
+
+    }
+}
 
 
 
@@ -107,14 +157,14 @@ public struct AgentSteering : IJobParallelForTransform
     [ReadOnly] Vector3 playfieldCenter;
     [ReadOnly] float fluidDensity;
     [ReadOnly] NativeArray<Agent> readOnlyAgents;
-    [ReadOnly] NativeArray<SquadronOrders> squadronOrders;
+    [ReadOnly] NativeArray<Squadron> squadron;
     NativeArray<Agent> agents;
 
 
-    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, NativeArray<SquadronOrders> _squadronOrders,  float _deltaTime, float _time, Vector3 _playfieldSize, Vector3 _playfieldCenter)
+    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, NativeArray<Squadron> _squadron,  float _deltaTime, float _time, Vector3 _playfieldSize, Vector3 _playfieldCenter)
     {
         time = _time;
-        squadronOrders = _squadronOrders;
+        squadron = _squadron;
         agents = _agents;
         readOnlyAgents = _readOnlyAgents;
         deltaTime = _deltaTime;
@@ -205,29 +255,29 @@ public struct AgentSteering : IJobParallelForTransform
         Agent agent = readOnlyAgents[id];
         Vector3 formationVector = Vector3.zero;
 
-        for(int i = 0; i < squadronOrders.Length; i++)
+        for(int i = 0; i < squadron.Length; i++)
         {
-            if(squadronOrders[i].squdronID == agent.squadron)
+            if(squadron[i].squdronID == agent.squadron)
             {
-                SquadronOrders myOrders = squadronOrders[i];
+                Squadron mySquadron = squadron[i];
 
-                Vector3 rallyPointDirectionVector = (myOrders.rallyPoint - agent.position);
+                Vector3 rallyPointDirectionVector = (mySquadron.rallyPoint - agent.position);
                 float distance = rallyPointDirectionVector.magnitude;
 
-                if (myOrders.formation == SquadronOrders.Formation.Defensive)
+                if (mySquadron.formation == Squadron.Formation.Defensive)
                 {
-                    if (distance > SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                    if (distance > Squadron.DEFENSIVE_FORMATION_ACCEPTED_RADIUS)
                     {
                         formationVector = rallyPointDirectionVector.normalized;
-                        agent.target = myOrders.rallyPoint;
+                        agent.target = mySquadron.rallyPoint;
                     }
                 }
-                else if(myOrders.formation == SquadronOrders.Formation.Offensive)
+                else if(mySquadron.formation == Squadron.Formation.Offensive)
                 {
-                    if(distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                    if(distance > Squadron.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
                     {
                         formationVector = rallyPointDirectionVector.normalized;
-                        agent.target = myOrders.rallyPoint;
+                        agent.target = mySquadron.rallyPoint;
                     }
                 }
 
@@ -243,18 +293,15 @@ public struct AgentSteering : IJobParallelForTransform
         Agent agent = readOnlyAgents[id];
 
         Vector3 follow = Vector3.zero;
-        if(agent.agentState == Agent.AgentState.Iddle || agent.agentState == Agent.AgentState.Pursue)
+        bool inRange;
+        float distance;
+        int targetID = GetClosestEnemyAgentID(id, out inRange, out distance);
+
+        if (inRange)
         {
-            bool inRange;
-            float distance;
-            int targetID = GetClosestEnemyAgentID(id, out inRange, out distance);
+            follow = (readOnlyAgents[targetID].position - agent.position).normalized;
 
-            if(inRange)
-            {
-                follow = (readOnlyAgents[targetID].position - agent.position).normalized;
-
-                ShootBlaster(id, targetID, distance);
-            }
+            ShootBlaster(id, targetID, distance);
         }
         return follow;
     }
@@ -436,8 +483,7 @@ public struct AgentCollision : IJob
                         agentOne.flightDirection = -(impulseMagnitude / agentOne.mass) * deltaNormalized;
                         agentTwo.flightDirection = (impulseMagnitude / agentTwo.mass) * deltaNormalized;
 
-                        agentOne.agentHP -= 0.1f;
-                        agentTwo.agentHP -= 0.1f;
+
 
                         agents[i] = agentOne;
                         agents[j] = agentTwo;

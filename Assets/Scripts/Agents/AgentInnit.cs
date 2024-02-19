@@ -5,11 +5,14 @@ using UnityEngine;
 public class AgentInnit : MonoBehaviour
 {
     [SerializeField]
-    MeshRenderer myRenderer;
+    MeshRenderer[] myRenderers;
 
     public void Innit(int team, int warpMatIndex)
     {
-        myRenderer.material = TeamManager.GetTeamMat(team);
-        TeamManager.SubscribeUnitToWarpMat(myRenderer, warpMatIndex);
+        for(int i = 0; i < myRenderers.Length; i++)
+        {
+            myRenderers[i].material = TeamManager.GetTeamMat(team);
+            TeamManager.SubscribeUnitToWarpMat(myRenderers[i], warpMatIndex);
+        }
     }
 }

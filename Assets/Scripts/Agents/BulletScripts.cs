@@ -23,11 +23,13 @@ public struct Bullet
     public int bulletChunk;
 
     public bool destroy;
+    public int teamID;
     public int hitID;
     public float ignoreCollision;
     
-    public Bullet(Vector3 positon, quaternion rotation, Vector3 scale, float _speed, float _damage, float currentTime, float _destroyTime, int _bulletChunk)
+    public Bullet(int team, Vector3 positon, quaternion rotation, Vector3 scale, float _speed, float _damage, float currentTime, float _destroyTime, int _bulletChunk)
     {
+        teamID = team;
         transformMatrix = Matrix4x4.TRS(positon, rotation, scale);
         lastCollisionCheckPosition = positon;
         lastPosition = positon;
@@ -102,7 +104,7 @@ public struct MoveBullets : IJobParallelFor
         for (int i = 0; i < agents.Length; i++)
         {
             Agent agent = agents[i];
-            if (agent.position.x - agent.colliderSize > math.max(middle.x, position.x))
+            if (agent.agentTeam == bullet.teamID || agent.position.x - agent.colliderSize > math.max(middle.x, position.x))
             {
                 break;
             }

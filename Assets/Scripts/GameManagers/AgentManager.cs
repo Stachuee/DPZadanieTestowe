@@ -7,7 +7,7 @@ using UnityEngine.Jobs;
 
 public class AgentManager : MonoBehaviour
 {
-    public static AgentManager Instance;
+    public static AgentManager Instance { get; private set; }
 
     [SerializeField] int agentCount;
     
@@ -15,9 +15,11 @@ public class AgentManager : MonoBehaviour
     List<Agent> allAgents = new List<Agent>();
     List<Transform> allAgentTransforms = new List<Transform>();
     [SerializeField]
-    List<SquadronOrders> orders = new List<SquadronOrders>();
+    List<Squadron> squadron = new List<Squadron>();
     [SerializeField]
     List<Bullet> bullets = new List<Bullet>();
+    [SerializeField] 
+    List<CaptureZone> captureZones = new List<CaptureZone>();
 
 
     Dictionary<int, string> agentNames = new Dictionary<int, string>(); // remember to remove names after destroying agent
@@ -33,12 +35,14 @@ public class AgentManager : MonoBehaviour
 
     NativeArray<Agent> agentsNativeArray;
     NativeArray<Agent> readOnlyAgentsNativeArray;
-    NativeArray<SquadronOrders> ordersNativeArray;
+    NativeArray<Squadron> squadronNativeArray;
     NativeArray<Bullet> bulletsNativeArray;
+    NativeArray<CaptureZone> captureZonesNativeArray;
     TransformAccessArray transformAccessArray;
 
     JobHandle agentSteeringHandle;
     JobHandle bulletHandle;
+    JobHandle zonesHandle;
 
 
 
@@ -69,7 +73,10 @@ public class AgentManager : MonoBehaviour
         bulletRenderParams.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         bulletRenderParams.receiveShadows = false;
 
-        WarpDivision(10,type, blaster, 0, 0);
+        WarpSquadron(1, type, blaster, 0, 0);
+        WarpSquadron(1, type, blaster, 1, 1);
+        WarpSquadron(1, type, blaster, 2, 0);
+        WarpSquadron(1, type, blaster, 3, 1);
     }
 
 
@@ -80,16 +87,24 @@ public class AgentManager : MonoBehaviour
 
         agentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
         readOnlyAgentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
-        ordersNativeArray = new NativeArray<SquadronOrders>(orders.ToArray(), Allocator.TempJob);
+        squadronNativeArray = new NativeArray<Squadron>(squadron.ToArray(), Allocator.TempJob);
         bulletsNativeArray = new NativeArray<Bullet>(bullets.ToArray(), Allocator.TempJob);
+        captureZonesNativeArray = new NativeArray<CaptureZone>(captureZones.ToArray(), Allocator.TempJob);
         transformAccessArray = new TransformAccessArray(allAgentTransforms.ToArray());
 
         AgentCollision agentCollisionJob = new AgentCollision(
             agentsNativeArray);
         agentCollisionJob.Run();
 
+        SquadronUtil squadronUtil = new SquadronUtil(
+            squadronNativeArray,
+            readOnlyAgentsNativeArray
+        );
 
-        for(int i = 0; i < allAgents.Count; i++)
+        squadronUtil.Run();
+
+
+        for (int i = 0; i < allAgents.Count; i++)
         {
             transformAccessArray[i].position = agentsNativeArray[i].position; // not sure about that. Could be using this wrong
         }
@@ -97,7 +112,7 @@ public class AgentManager : MonoBehaviour
         AgentSteering agentSteeringJob = new AgentSteering(
             agentsNativeArray, 
             readOnlyAgentsNativeArray,
-            ordersNativeArray,
+            squadronNativeArray,
             Time.deltaTime,
             Time.time,
             playfieldSize,
@@ -105,6 +120,15 @@ public class AgentManager : MonoBehaviour
             );
 
         agentSteeringHandle = agentSteeringJob.Schedule(transformAccessArray);
+
+
+        CheckCaptureZone checkCaptureZone = new CheckCaptureZone(
+            readOnlyAgentsNativeArray,
+            Time.deltaTime,
+            captureZonesNativeArray
+            );
+
+        zonesHandle = checkCaptureZone.Schedule(captureZonesNativeArray.Length, 4);
 
 
         currentBulletChunkCheck = (currentBulletChunkCheck + 1) % bulletsChunks;
@@ -126,6 +150,7 @@ public class AgentManager : MonoBehaviour
     {
         agentSteeringHandle.Complete();
         bulletHandle.Complete();
+        zonesHandle.Complete();
 
         for (int i = 0; i < allAgents.Count; i++)
         {
@@ -138,6 +163,7 @@ public class AgentManager : MonoBehaviour
                 currentBulletChunk = (currentBulletChunk + 1) % bulletsChunks;
 
                 bullets.Add(new Bullet(
+                    shooter.agentTeam,
                     shooter.position + shooter.blaster.barrelOrientation * shooter.colliderSize * 1.5f,
                     Quaternion.LookRotation(shooter.blaster.barrelOrientation, allAgents[i].up),
                     Vector3.one / 5,
@@ -156,6 +182,24 @@ public class AgentManager : MonoBehaviour
             bullets[i] = bulletsNativeArray[i];
         }
 
+        for(int i = 0; i < captureZonesNativeArray.Length; i++)
+        {
+            captureZones[i] = captureZonesNativeArray[i];
+        }
+
+        for(int i = squadronNativeArray.Length - 1; i >= 0; i--)
+        {
+            if(squadronNativeArray[i].squadronUnitCount > 0)
+            {
+                squadron[i] = squadronNativeArray[i];
+            }
+            else
+            {
+                IconOverlayUI.Instance.RemoveSquadronWaypoint(squadron[i].squdronID);
+                squadron.RemoveAt(i);
+            }
+        }
+
         ClearBullets();
         ClearAgents();
 
@@ -165,30 +209,38 @@ public class AgentManager : MonoBehaviour
         agentsNativeArray.Dispose();
         transformAccessArray.Dispose();
         readOnlyAgentsNativeArray.Dispose();
-        ordersNativeArray.Dispose();
+        squadronNativeArray.Dispose();
         bulletsNativeArray.Dispose();
+        captureZonesNativeArray.Dispose();
     }
 
-    public void WarpDivision(int unitCount, AgentTypeSO type, AgentWeaponsBlasterSO blaster,  int divisionID, int teamID)
+    public void WarpSquadron(int unitCount, AgentTypeSO type, AgentWeaponsBlasterSO blaster, int squadronID, int teamID)
     {
         int matIndex = TeamManager.GetTeamWarpMaterialID(teamID);
 
+        int squadronIndex = squadron.FindIndex(squadron => squadron.squdronID == squadronID);
+        if (squadronIndex == -1)
+        {
+            Squadron order = new Squadron()
+            {
+                formation = Squadron.Formation.Defensive,
+                rallyPoint = new Vector3(0, 0, 0),
+                squdronID = squadronID
+            };
+            squadron.Add(order);
+            IconOverlayUI.Instance.CreateSquadronWaypoint(squadronID, teamID);
+        }
+        
         for (int i = 0; i < unitCount; i++)
             WarpAgent(
                 type,
                 blaster,
                 TeamManager.GetRandomTeamWarpPosition(teamID),
                 matIndex,
-                divisionID,
+                squadronID,
                 teamID
                 );
-        SquadronOrders order = new SquadronOrders()
-        {
-            formation = SquadronOrders.Formation.Defensive,
-            rallyPoint = new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
-            squdronID = divisionID
-        };
-        orders.Add(order);
+
     }
 
     public void WarpAgent(AgentTypeSO type, AgentWeaponsBlasterSO blasterType, Vector3 spawnPoint, int warpMatIndex, int squadron, int team)
@@ -225,6 +277,7 @@ public class AgentManager : MonoBehaviour
             agentHP = type.GetHp(),
             avoidenenceRange = type.GetAvoidenenceRange(),
             scannerRange = type.GetScannerRange(),
+            captureRate = type.GetCaptureRate(),
             blaster = blaster,
         };
         
@@ -265,10 +318,10 @@ public class AgentManager : MonoBehaviour
 
         for(int i = toRemove.Count - 1; i >= 0; i--)
         {
-            agentNames.Remove(allAgents[i].id);
-            allAgents.RemoveAt(i);
-            AgentPooling.Instance.ReturnAgentToPool(allAgentTransforms[i].gameObject);
-            allAgentTransforms.RemoveAt(i);
+            agentNames.Remove(allAgents[toRemove[i]].id);
+            allAgents.RemoveAt(toRemove[i]);
+            AgentPooling.Instance.ReturnAgentToPool(allAgentTransforms[toRemove[i]].gameObject);
+            allAgentTransforms.RemoveAt(toRemove[i]);
         }
     }
 
@@ -324,6 +377,11 @@ public class AgentManager : MonoBehaviour
         return agentCount;
     }
 
+    public List<Squadron> GetSquadrons()
+    {
+        return squadron;
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.yellow;
@@ -340,14 +398,20 @@ public class AgentManager : MonoBehaviour
 
         Gizmos.DrawWireCube(playfieldCenter, new Vector3(playfieldSize.x, playfieldSize.y, playfieldSize.z));
 
-        foreach (SquadronOrders order in orders)
+        foreach (Squadron order in squadron)
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawSphere(order.rallyPoint, 1);
             Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(order.rallyPoint, SquadronOrders.DEFENSIVE_FORMATION_ACCEPTED_RADIUS);
+            Gizmos.DrawWireSphere(order.rallyPoint, Squadron.DEFENSIVE_FORMATION_ACCEPTED_RADIUS);
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(order.rallyPoint, SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS);
+            Gizmos.DrawWireSphere(order.rallyPoint, Squadron.OFFENSIVE_FORMATION_ACCEPTED_RADIUS);
         }
+
+        captureZones.ForEach(zone =>
+        {
+            Gizmos.color = Color.black;
+            Gizmos.DrawWireSphere(zone.position, zone.size);
+        });
     }
 }

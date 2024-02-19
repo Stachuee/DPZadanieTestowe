@@ -704,7 +704,7 @@ Transform:
   m_GameObject: {fileID: 816136837}
   serializedVersion: 2
   m_LocalRotation: {x: 0.4010263, y: -0, z: -0, w: 0.9160666}
-  m_LocalPosition: {x: 0, y: 7.53, z: -8.65}
+  m_LocalPosition: {x: 0, y: 53.9, z: -66.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -773,6 +773,7 @@ GameObject:
   - component: {fileID: 953772271}
   - component: {fileID: 953772270}
   - component: {fileID: 953772274}
+  - component: {fileID: 953772275}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -881,6 +882,25 @@ MonoBehaviour:
   agentMask:
     serializedVersion: 2
     m_Bits: 64
+--- !u!114 &953772275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953772269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d202398e8e31a9468b6d81a9a9d3f5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pointObject: {fileID: 1197381012908244872, guid: f7d52b0eec9262d429ca6a73b77df52e,
+    type: 3}
+  squadronObject: {fileID: 1197381012908244872, guid: 09ba9771141951742b3da053b847fdfe,
+    type: 3}
+  warpPointObject: {fileID: 1197381012908244872, guid: 3857bd31c5504464b949d69b6eebd161,
+    type: 3}
+  maxMarkerMovment: 300
 --- !u!1 &1429370081
 GameObject:
   m_ObjectHideFlags: 0
@@ -912,7 +932,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29e3a9c400bae2a478ae72504cbf499d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentPrefab: {fileID: 145837978330008099, guid: f5263ef4a46763640ac9eb013fadbb04,
+  agentPrefab: {fileID: 4775015498615204024, guid: cad3db46c6457fc4fa067fd2655f4a46,
     type: 3}
 --- !u!114 &1429370083
 MonoBehaviour:
@@ -928,10 +948,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agentCount: 10
   allAgents: []
-  orders: []
+  squadron: []
   bullets: []
+  captureZones:
+  - position: {x: -90, y: 15, z: -40}
+    size: 10
+    teamControlling: 0
+    controll: 0
+  - position: {x: 0, y: 0, z: 0}
+    size: 10
+    teamControlling: 0
+    controll: 0
+  - position: {x: 90, y: -15, z: 40}
+    size: 10
+    teamControlling: 0
+    controll: 0
+  - position: {x: 50, y: 16, z: -24}
+    size: 10
+    teamControlling: 0
+    controll: 0
+  - position: {x: -50, y: -16, z: 24}
+    size: 10
+    teamControlling: 0
+    controll: 0
   playfieldCenter: {x: 0, y: 0, z: 0}
-  playfieldSize: {x: 10, y: 10, z: 10}
+  playfieldSize: {x: 200, y: 50, z: 100}
   bulletsChunks: 2
   bulletMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   bulletMaterial: {fileID: 2100000, guid: a432974103715ef4888349aa9726acf3, type: 2}
@@ -966,15 +1007,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _teams:
   - teamMat: {fileID: 2100000, guid: 4878532faace7dc4d960b6c6145328bd, type: 2}
-    teamColor: {r: 1, g: 0, b: 0, a: 0}
-    teamWarpPoint: {x: 0, y: 0, z: 0}
-    teamWarpRadius: 20
-    warpDirection: {x: -1, y: -1, z: -1}
+    teamColor: {r: 1, g: 0, b: 0, a: 1}
+    teamWarpPoint: {x: 90, y: 0, z: 0}
+    teamWarpRadius: 25
+    warpDirection: {x: -1, y: 0, z: 0}
   - teamMat: {fileID: 2100000, guid: 5028e93c8a4d9324197b26786b537454, type: 2}
-    teamColor: {r: 0, g: 0.2598443, b: 1, a: 0}
-    teamWarpPoint: {x: 0, y: 0, z: 0}
-    teamWarpRadius: 20
-    warpDirection: {x: 1, y: 1, z: 1}
+    teamColor: {r: 0, g: 0.2598443, b: 1, a: 1}
+    teamWarpPoint: {x: -90, y: 0, z: 0}
+    teamWarpRadius: 25
+    warpDirection: {x: 1, y: 0, z: 0}
   _warpMaterials:
   - warpPosition: {x: 0, y: 0, z: 0}
     warpNormal: {x: 0, y: 0, z: 0}

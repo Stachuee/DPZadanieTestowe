@@ -14,7 +14,7 @@ public class TeamManager : MonoBehaviour
         public Vector3 warpDirection;
     }
 
-    public static List<Team> teams;
+    public static List<Team> teams { get; private set; }
     [SerializeField] List<Team> _teams;
 
     [System.Serializable]
@@ -55,6 +55,11 @@ public class TeamManager : MonoBehaviour
     private void Update()
     {
         UpdateWarpMaterials();
+    }
+
+    public static Color GetTeamColor(int teamID)
+    {
+        return teams[teamID].teamColor;
     }
 
     public static Material GetTeamMat(int team)

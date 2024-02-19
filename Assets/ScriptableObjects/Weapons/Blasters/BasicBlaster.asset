@@ -15,4 +15,4 @@ MonoBehaviour:
   fireRate: 1
   damage: 10
   missleSpeed: 100
-  missleLifetime: 5
+  missleLifetime: 2

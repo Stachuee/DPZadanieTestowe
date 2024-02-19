@@ -18,7 +18,8 @@ MonoBehaviour:
   dragCoefficient: 0.47
   engineMaxStrenght: 1000
   breakingStrenght: 2000
-  avoidenenceRange: 3
+  avoidenenceRange: 5
+  captureRate: 0.1
   maneuverabilityVertical: 1
   maneuverabilityHorizontal: 0.5
   rollSpeed: 1

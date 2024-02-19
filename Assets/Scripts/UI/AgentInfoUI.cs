@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class AgentInfoUI : MonoBehaviour
 {
+    public static AgentInfoUI Instance { get; private set; }
+
     [SerializeField] GameObject agentInfoPanel;
 
     [SerializeField] Image agentHp;
@@ -21,6 +23,18 @@ public class AgentInfoUI : MonoBehaviour
     int currentAgent;
     bool trackingAgent;
 
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogError("Two agent info ui controllers");
+        }
+    }
+
     private void Start()
     {
         cam = Camera.main;
@@ -28,38 +42,21 @@ public class AgentInfoUI : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()) GetClickedAgent();
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()) HideUI();
 
         UpdateUI();
     }
 
-    void GetClickedAgent()
+    public void FollowSquadron(int squadronID)
     {
-        RaycastHit hit;
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, agentMask))
-        {
-            agentName.text = hit.collider.name;
+        Debug.Log("following");
+        agentInfoPanel.SetActive(true);
+    }
 
-            int id;
-            if(int.TryParse(hit.collider.name, out id))
-            {
-                currentAgent = id;
-                agentName.text = AgentManager.Instance.GetAgentNameByID(id);
-            }
-            else
-            {
-                Debug.LogError("Agent ID in name incorrect");
-            }
+    public void HideUI()
+    {
+        agentInfoPanel.SetActive(false);
 
-            trackingAgent = true;
-            agentInfoPanel.SetActive(true);
-        }
-        else
-        {
-            trackingAgent = false;
-            agentInfoPanel.SetActive(false);
-        }
     }
 
     void UpdateUI()

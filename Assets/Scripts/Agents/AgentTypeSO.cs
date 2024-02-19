@@ -14,6 +14,8 @@ public class AgentTypeSO : ScriptableObject
     [SerializeField, Min(0)] float breakingStrenght;
     [SerializeField, Min(0)] float avoidenenceRange;
 
+    [SerializeField, Min(0)] float captureRate;
+
     [SerializeField, Min(0)] float maneuverabilityVertical;
     [SerializeField, Min(0)] float maneuverabilityHorizontal;
     [SerializeField, Min(0)] float rollSpeed;
@@ -64,5 +66,10 @@ public class AgentTypeSO : ScriptableObject
     public float GetScannerRange()
     {
         return scannerRange;
+    }
+
+    public float GetCaptureRate()
+    {
+        return captureRate;
     }
 }
