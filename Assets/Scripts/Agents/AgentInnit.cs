@@ -7,8 +7,9 @@ public class AgentInnit : MonoBehaviour
     [SerializeField]
     MeshRenderer myRenderer;
 
-    public void Innit(int team)
+    public void Innit(int team, int warpMatIndex)
     {
         myRenderer.material = TeamManager.GetTeamMat(team);
+        TeamManager.SubscribeUnitToWarpMat(myRenderer, warpMatIndex);
     }
 }

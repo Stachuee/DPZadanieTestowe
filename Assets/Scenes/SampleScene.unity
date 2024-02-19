@@ -931,12 +931,12 @@ MonoBehaviour:
   orders: []
   bullets: []
   playfieldCenter: {x: 0, y: 0, z: 0}
-  playfieldSize: {x: 100, y: 100, z: 100}
+  playfieldSize: {x: 10, y: 10, z: 10}
   bulletsChunks: 2
-  toSpawn: {fileID: 11400000, guid: 9618d604e6044e44a8eddd3579986d9d, type: 2}
-  blaster: {fileID: 11400000, guid: d77db62e8112fea419641eaa7f722df8, type: 2}
   bulletMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   bulletMaterial: {fileID: 2100000, guid: a432974103715ef4888349aa9726acf3, type: 2}
+  type: {fileID: 11400000, guid: 9618d604e6044e44a8eddd3579986d9d, type: 2}
+  blaster: {fileID: 11400000, guid: d77db62e8112fea419641eaa7f722df8, type: 2}
 --- !u!4 &1429370084
 Transform:
   m_ObjectHideFlags: 0
@@ -964,9 +964,98 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b0b0000fac1899448294024b5d48f55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _teamMats:
-  - {fileID: 2100000, guid: 4878532faace7dc4d960b6c6145328bd, type: 2}
-  - {fileID: 2100000, guid: 5028e93c8a4d9324197b26786b537454, type: 2}
+  _teams:
+  - teamMat: {fileID: 2100000, guid: 4878532faace7dc4d960b6c6145328bd, type: 2}
+    teamColor: {r: 1, g: 0, b: 0, a: 0}
+    teamWarpPoint: {x: 0, y: 0, z: 0}
+    teamWarpRadius: 20
+    warpDirection: {x: -1, y: -1, z: -1}
+  - teamMat: {fileID: 2100000, guid: 5028e93c8a4d9324197b26786b537454, type: 2}
+    teamColor: {r: 0, g: 0.2598443, b: 1, a: 0}
+    teamWarpPoint: {x: 0, y: 0, z: 0}
+    teamWarpRadius: 20
+    warpDirection: {x: 1, y: 1, z: 1}
+  _warpMaterials:
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: d2380c2ec6b54444b9c0e029bfc9d314, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 720c190c4b2d68e4c92e99d73fe3afca, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 25463c30276b9104c99ad0124186d621, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 275e00fc18b651f40b97ad8ca617d0a0, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: d0299e5acbd530c44be37f9e7fd19700, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 3118bdb858a8ec3498b36e544d157225, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 499fbc0720d6ce745b6970834d77b19a, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: 3ccc148d06613c84184e3e0c1bb33f92, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: bd9b80188d948ab45acff7c555055ff7, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
+  - warpPosition: {x: 0, y: 0, z: 0}
+    warpNormal: {x: 0, y: 0, z: 0}
+    warpProgress: 0
+    warpSpeed: 0
+    teamWarp: 0
+    mat: {fileID: 2100000, guid: ba53bfd484a1e6540a8bc6980e307dd7, type: 2}
+    renderersUsingMat: []
+    inProgress: 0
 --- !u!1 &1637448187
 GameObject:
   m_ObjectHideFlags: 0

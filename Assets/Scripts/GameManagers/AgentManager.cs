@@ -41,15 +41,13 @@ public class AgentManager : MonoBehaviour
     JobHandle bulletHandle;
 
 
-    [SerializeField] AgentTypeSO toSpawn;
-    [SerializeField] AgentWeaponsBlasterSO blaster;
-
-
 
     [SerializeField] Mesh bulletMesh;
     [SerializeField] Material bulletMaterial;
     RenderParams bulletRenderParams;
 
+    [SerializeField] AgentTypeSO type;
+    [SerializeField] AgentWeaponsBlasterSO blaster;
 
     private void Awake()
     {
@@ -71,11 +69,7 @@ public class AgentManager : MonoBehaviour
         bulletRenderParams.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         bulletRenderParams.receiveShadows = false;
 
-
-        for (int i = 0; i < 2; i++)
-        {
-            SpawnDivision(500, i, i%2);
-        }
+        WarpDivision(10,type, blaster, 0, 0);
     }
 
 
@@ -175,13 +169,16 @@ public class AgentManager : MonoBehaviour
         bulletsNativeArray.Dispose();
     }
 
-    public void SpawnDivision(int unitCount, int divisionID, int teamID)
+    public void WarpDivision(int unitCount, AgentTypeSO type, AgentWeaponsBlasterSO blaster,  int divisionID, int teamID)
     {
+        int matIndex = TeamManager.GetTeamWarpMaterialID(teamID);
+
         for (int i = 0; i < unitCount; i++)
-            SpawnAgent(
-                toSpawn,
+            WarpAgent(
+                type,
                 blaster,
-                new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
+                TeamManager.GetRandomTeamWarpPosition(teamID),
+                matIndex,
                 divisionID,
                 teamID
                 );
@@ -194,10 +191,10 @@ public class AgentManager : MonoBehaviour
         orders.Add(order);
     }
 
-    public void SpawnAgent(AgentTypeSO type, AgentWeaponsBlasterSO blasterType, Vector3 spawnPoint, int squadron, int team)
+    public void WarpAgent(AgentTypeSO type, AgentWeaponsBlasterSO blasterType, Vector3 spawnPoint, int warpMatIndex, int squadron, int team)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
-        newAgent.GetComponent<AgentInnit>().Innit(team);
+        newAgent.GetComponent<AgentInnit>().Innit(team, warpMatIndex);
         newAgent.transform.position = spawnPoint;
 
         Blaster blaster = new Blaster()
@@ -215,7 +212,7 @@ public class AgentManager : MonoBehaviour
             squadron = squadron,
             agentTeam = team,
             up = new Vector3(0, 1, 0),
-            forward = new Vector3(1, 0, 0),
+            forward = TeamManager.GetTeamWarpRotation(team),
             colliderSize = type.GetColliderSize(),
             mass = type.GetMass(),
             dragCoefficient = type.GetDragCoefficient(),
@@ -268,6 +265,7 @@ public class AgentManager : MonoBehaviour
 
         for(int i = toRemove.Count - 1; i >= 0; i--)
         {
+            agentNames.Remove(allAgents[i].id);
             allAgents.RemoveAt(i);
             AgentPooling.Instance.ReturnAgentToPool(allAgentTransforms[i].gameObject);
             allAgentTransforms.RemoveAt(i);
