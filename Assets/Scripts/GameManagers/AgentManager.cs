@@ -16,6 +16,9 @@ public class AgentManager : MonoBehaviour
     List<Transform> allAgentTransforms = new List<Transform>();
     [SerializeField]
     List<SquadronOrders> orders = new List<SquadronOrders>();
+    [SerializeField]
+    List<Bullet> bullets = new List<Bullet>();
+
 
     Dictionary<int, string> agentNames = new Dictionary<int, string>(); // remember to remove names after destroying agent
 
@@ -28,12 +31,22 @@ public class AgentManager : MonoBehaviour
     NativeArray<Agent> agentsNativeArray;
     NativeArray<Agent> readOnlyAgentsNativeArray;
     NativeArray<SquadronOrders> ordersNativeArray;
+    NativeArray<Bullet> bulletsNativeArray;
     TransformAccessArray transformAccessArray;
 
     JobHandle agentSteeringHandle;
+    JobHandle bulletHandle;
 
 
     [SerializeField] AgentTypeSO toSpawn;
+    [SerializeField] AgentWeaponsBlasterSO blaster;
+
+
+
+    [SerializeField] Mesh bulletMesh;
+    [SerializeField] Material bulletMaterial;
+    RenderParams bulletRenderParams;
+
 
     private void Awake()
     {
@@ -50,6 +63,12 @@ public class AgentManager : MonoBehaviour
     private void Start()
     {
         AgentPooling.Instance.CreatePool(agentCount);
+
+        bulletRenderParams = new RenderParams(bulletMaterial);
+        bulletRenderParams.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        bulletRenderParams.receiveShadows = false;
+
+
         for (int i = 0; i < 2; i++)
         {
             SpawnDivision(1, i, i%2);
@@ -59,14 +78,17 @@ public class AgentManager : MonoBehaviour
 
     private void Update()
     {
+
         SortAgents();
 
         agentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
         readOnlyAgentsNativeArray = new NativeArray<Agent>(allAgents.ToArray(), Allocator.TempJob);
         ordersNativeArray = new NativeArray<SquadronOrders>(orders.ToArray(), Allocator.TempJob);
+        bulletsNativeArray = new NativeArray<Bullet>(bullets.ToArray(), Allocator.TempJob);
         transformAccessArray = new TransformAccessArray(allAgentTransforms.ToArray());
 
-        AgentCollision agentCollisionJob = new AgentCollision(agentsNativeArray);
+        AgentCollision agentCollisionJob = new AgentCollision(
+            agentsNativeArray);
         agentCollisionJob.Run();
 
 
@@ -75,37 +97,75 @@ public class AgentManager : MonoBehaviour
             transformAccessArray[i].position = agentsNativeArray[i].position; // not sure about that. Could be using this wrong
         }
 
-        AgentSteering agentSteeringJob = new AgentSteering(agentsNativeArray, 
+        AgentSteering agentSteeringJob = new AgentSteering(
+            agentsNativeArray, 
             readOnlyAgentsNativeArray,
             ordersNativeArray,
             Time.deltaTime,
+            Time.time,
             playfieldSize,
             playfieldCenter
             );
 
         agentSteeringHandle = agentSteeringJob.Schedule(transformAccessArray);
 
+
+        MoveBullets moveBullets = new MoveBullets(
+            bulletsNativeArray,
+            Time.time,
+            Time.deltaTime);
+
+        bulletHandle = moveBullets.Schedule(bulletsNativeArray.Length, 32);
+        
     }
+
 
     private void LateUpdate()
     {
         agentSteeringHandle.Complete();
+        bulletHandle.Complete();
 
-        for(int i = 0; i < allAgents.Count; i++)
+        for (int i = 0; i < allAgents.Count; i++)
         {
             allAgents[i] = agentsNativeArray[i];
+            if (allAgents[i].blaster.fired)
+            {
+                Agent shooter = allAgents[i];
+                shooter.blaster.fired = false;
+                bullets.Add(new Bullet()
+                {
+                    destroyTime = Time.time + shooter.blaster.missleLifetime,
+                    speed = shooter.blaster.missleSpeed,
+                    transformMatrix = Matrix4x4.TRS(shooter.position, Quaternion.LookRotation(shooter.blaster.barrelOrientation, allAgents[i].up), Vector3.one/5),
+                });
+
+
+                allAgents[i] = shooter;
+            }
         }
+
+        for(int i = 0; i < bulletsNativeArray.Length; i++)
+        {
+            bullets[i] = bulletsNativeArray[i];
+        }
+
+        ClearBullets();
+        DrawBullets();
+
 
         agentsNativeArray.Dispose();
         transformAccessArray.Dispose();
         readOnlyAgentsNativeArray.Dispose();
         ordersNativeArray.Dispose();
+        bulletsNativeArray.Dispose();
     }
 
     public void SpawnDivision(int unitCount, int divisionID, int teamID)
     {
         for (int i = 0; i < unitCount; i++)
-            SpawnAgent(toSpawn,
+            SpawnAgent(
+                toSpawn,
+                blaster,
                 new Vector3(playfieldCenter.x + Random.Range(-playfieldSize.x, playfieldSize.x) / 2, playfieldCenter.y + Random.Range(-playfieldSize.y, playfieldSize.y) / 2, playfieldCenter.z + Random.Range(-playfieldSize.z, playfieldSize.z) / 2),
                 divisionID,
                 teamID
@@ -119,12 +179,23 @@ public class AgentManager : MonoBehaviour
         orders.Add(order);
     }
 
-    public void SpawnAgent(AgentTypeSO type, Vector3 spawnPoint, int squadron, int team)
+    public void SpawnAgent(AgentTypeSO type, AgentWeaponsBlasterSO blasterType, Vector3 spawnPoint, int squadron, int team)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();
         newAgent.GetComponent<AgentInnit>().Innit(team);
         newAgent.transform.position = spawnPoint;
+
+        Blaster blaster = new Blaster()
+        {
+            enabled = true,
+            damage = blasterType.GetDamage(),
+            fireRate = blasterType.GetFirerate(),
+            missleSpeed = blasterType.GetMissleSpeed(),
+            missleLifetime = blasterType.GetMissleLifeTime(),
+        };
+
         Agent toAdd = new Agent() {
+
             position = spawnPoint,
             squadron = squadron,
             agentTeam = team,
@@ -142,6 +213,7 @@ public class AgentManager : MonoBehaviour
             agentHP = type.GetHp(),
             avoidenenceRange = type.GetAvoidenenceRange(),
             scannerRange = type.GetScannerRange(),
+            blaster = blaster,
         };
         
         //string agentName = AgentNames.GetRandomName();
@@ -151,6 +223,19 @@ public class AgentManager : MonoBehaviour
 
         allAgentTransforms.Add(newAgent.transform);
         allAgents.Add(toAdd);
+    }
+
+    public void ClearBullets()
+    {
+        bullets.RemoveAll(x => x.destroy);
+    }
+
+    public void DrawBullets()
+    {
+        bullets.ForEach(bullet =>
+        {
+            Graphics.RenderMesh(bulletRenderParams, bulletMesh, 0, bullet.transformMatrix);
+        });
     }
 
     void SortAgents()
@@ -204,7 +289,9 @@ public class AgentManager : MonoBehaviour
         {
             Gizmos.DrawWireSphere(agent.position, agent.colliderSize);
             Gizmos.color = Color.red;
-            Gizmos.DrawLine(agent.position, agent.position + agent.steeringVector);
+            Gizmos.DrawLine(agent.position, agent.position + agent.steeringVector * 3);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(agent.position, agent.position + agent.blaster.barrelOrientation * 3);
         }
 
         Gizmos.color = Color.white;

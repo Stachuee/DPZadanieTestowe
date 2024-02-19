@@ -18,7 +18,6 @@ public struct Agent
     public int agentTeam;
     public AgentState agentState;
 
-    public Vector3 targetVector;
 
     public int squadron;
 
@@ -51,7 +50,38 @@ public struct Agent
 
     public Vector3 steeringVector;
     public Vector3 target;
+
+    public Vector3 test;
+    public Blaster blaster;
+
+    //public Rocket rocket;
 }
+
+[System.Serializable]
+public struct Blaster
+{
+    public bool enabled;
+    public float fireRate;
+    public float damage;
+    public float missleSpeed;
+    public float missleLifetime;
+
+
+    public bool fired;
+    public float lastShot;
+    public Vector3 barrelOrientation;
+
+}
+//[System.Serializable]
+//public struct Rocket
+//{
+//    public bool enabled;
+//    public float fireRate;
+//    public float damage;
+//    public float explosionRadius;
+//    public float missleSpeed;
+//}
+
 
 [System.Serializable]
 public struct SquadronOrders
@@ -72,6 +102,7 @@ public struct SquadronOrders
 public struct AgentSteering : IJobParallelForTransform
 {
     [ReadOnly] float deltaTime;
+    [ReadOnly] float time;
     [ReadOnly] Vector3 playfieldSize;
     [ReadOnly] Vector3 playfieldCenter;
     [ReadOnly] float fluidDensity;
@@ -80,8 +111,9 @@ public struct AgentSteering : IJobParallelForTransform
     NativeArray<Agent> agents;
 
 
-    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, NativeArray<SquadronOrders> _squadronOrders,  float _deltaTime, Vector3 _playfieldSize, Vector3 _playfieldCenter)
+    public AgentSteering(NativeArray<Agent> _agents, NativeArray<Agent> _readOnlyAgents, NativeArray<SquadronOrders> _squadronOrders,  float _deltaTime, float _time, Vector3 _playfieldSize, Vector3 _playfieldCenter)
     {
+        time = _time;
         squadronOrders = _squadronOrders;
         agents = _agents;
         readOnlyAgents = _readOnlyAgents;
@@ -93,10 +125,9 @@ public struct AgentSteering : IJobParallelForTransform
 
     public void Execute(int index, TransformAccess transform)
     {
+        Steer(index);
+        
         Agent agent = agents[index];
-
-        agent = Steer(agent, index);
-
 
         float agentspeed = agent.flightDirection.magnitude;
         float agentAcceleration = (agent.flightDirection - agent.prevFrameFlightDirection).magnitude ;
@@ -128,8 +159,9 @@ public struct AgentSteering : IJobParallelForTransform
         agents[index] = agent;
     }
 
-    Vector3 AvoidBounds(Agent agent)
+    Vector3 AvoidBounds(int id)
     {
+        Agent agent = readOnlyAgents[id];
         if (agent.position.x > playfieldCenter.x + playfieldSize.x ||
             agent.position.x < playfieldCenter.x - playfieldSize.x ||
             agent.position.y > playfieldCenter.y + playfieldSize.y ||
@@ -168,9 +200,9 @@ public struct AgentSteering : IJobParallelForTransform
         return avoidenence;
     }
 
-
-    Vector3 KeepFormation(Agent agent)
+    Vector3 KeepFormation(int id)
     {
+        Agent agent = readOnlyAgents[id];
         Vector3 formationVector = Vector3.zero;
 
         for(int i = 0; i < squadronOrders.Length; i++)
@@ -189,18 +221,13 @@ public struct AgentSteering : IJobParallelForTransform
                         formationVector = rallyPointDirectionVector.normalized;
                         agent.target = myOrders.rallyPoint;
                     }
-                    agent.agentState = Agent.AgentState.Defend;
                 }
                 else if(myOrders.formation == SquadronOrders.Formation.Offensive)
                 {
-                    if(agent.agentState == Agent.AgentState.Iddle && distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
+                    if(distance > SquadronOrders.OFFENSIVE_FORMATION_ACCEPTED_RADIUS)
                     {
                         formationVector = rallyPointDirectionVector.normalized;
                         agent.target = myOrders.rallyPoint;
-                    }
-                    else if(agent.agentState == Agent.AgentState.Defend)
-                    {
-                        agent.agentState = Agent.AgentState.Iddle;
                     }
                 }
 
@@ -208,50 +235,68 @@ public struct AgentSteering : IJobParallelForTransform
                 break;
             }
         }
-
-
         return formationVector;
     }
 
-
-
-    Vector3 FollowTarget(Agent agent, int agentID)
+    Vector3 PursueTarget(int id)
     {
+        Agent agent = readOnlyAgents[id];
+
         Vector3 follow = Vector3.zero;
         if(agent.agentState == Agent.AgentState.Iddle || agent.agentState == Agent.AgentState.Pursue)
         {
             bool inRange;
             float distance;
-            int targetID = GetClosestEnemyAgentID(agentID, out inRange, out distance);
+            int targetID = GetClosestEnemyAgentID(id, out inRange, out distance);
 
             if(inRange)
             {
                 follow = (readOnlyAgents[targetID].position - agent.position).normalized;
-                agent.agentState = Agent.AgentState.Pursue;
+
+                ShootBlaster(id, targetID, distance);
             }
         }
         return follow;
     }
 
-    Agent Steer(Agent agent, int index)
+    void ShootBlaster(int id, int targetID, float distance)
+    {
+        Agent agentOne = agents[id];
+        Blaster blasterOne = agentOne.blaster;
+
+        if (blasterOne.lastShot + 1 / blasterOne.fireRate > time) return;
+
+        Agent agentTwo = readOnlyAgents[targetID];
+        float approximatedTravelTime = distance / blasterOne.missleSpeed;
+        Vector3 approximatedEnemyPosition = agentTwo.position + agentTwo.flightDirection * approximatedTravelTime;
+        blasterOne.barrelOrientation = (approximatedEnemyPosition - agentOne.position).normalized;
+        blasterOne.fired = true;
+        blasterOne.lastShot = time;
+
+        agentOne.blaster = blasterOne;
+        agents[id] = agentOne;
+    }
+
+    void Steer(int index)
     {
 
         Vector3 avoidenenceSteering = Vector3.zero;
         Vector3 targetSteering = Vector3.zero;
 
-        avoidenenceSteering += AvoidBounds(agent);
+        avoidenenceSteering += AvoidBounds(index);
         avoidenenceSteering += AvoidAgents(index);
-        targetSteering += KeepFormation(agent);
-        targetSteering += FollowTarget(agent, index);
-        agent.targetVector = targetSteering;
+        targetSteering += KeepFormation(index);
+        targetSteering += PursueTarget(index);
+
+        Agent agent = agents[index];
+
 
         if (avoidenenceSteering.magnitude > 0.05f)
         {
-            // try to not ram into the target
             agent.throttle = 1;
             agent.breaks = 0;
         }
-        else if(targetSteering.magnitude > 0.05f)
+        else if (targetSteering.magnitude > 0.05f)
         {
             //speed up to not hit anything
             bool breaks = BreakingRequired(agent, Vector3.Distance(agent.position, agent.target));
@@ -269,7 +314,8 @@ public struct AgentSteering : IJobParallelForTransform
         if (steering.magnitude < 0.05f)
         {
             agent.up = Vector3.RotateTowards(agent.up, Vector3.up, agent.rollSpeed * deltaTime, 0);
-            return agent;
+            agents[index] = agent;
+            return;
         }
 
         steering = steering.normalized;
@@ -282,13 +328,13 @@ public struct AgentSteering : IJobParallelForTransform
 
         float horizontalPower = math.abs(Vector3.Angle(agent.up, steerProjectedNormalized) % 180 - 90) / 90;
 
-        Vector3 steerPower = (targetInFront ? steerProjected : steerProjectedNormalized ) * (agent.maneuverabilityHorizontal * horizontalPower + agent.maneuverabilityVertical * (1 - horizontalPower));
+        Vector3 steerPower = (targetInFront ? steerProjected : steerProjectedNormalized) * (agent.maneuverabilityHorizontal * horizontalPower + agent.maneuverabilityVertical * (1 - horizontalPower));
 
         Vector3 steerPowerNormalized = agent.forward * math.sqrt(1 - steerPower.magnitude) + steerPower;
 
         agent.forward = Vector3.RotateTowards(agent.forward, steerPowerNormalized, agent.rollSpeed * deltaTime, 0);
-        
-        if(!targetInFront)
+
+        if (!targetInFront)
         {
             agent.throttle = .5f;
             agent.breaks = .5f;
@@ -296,7 +342,8 @@ public struct AgentSteering : IJobParallelForTransform
 
         agent.steeringVector = steerPowerNormalized;
 
-        return agent;
+        agents[index] = agent;
+        return;
     }
 
 
