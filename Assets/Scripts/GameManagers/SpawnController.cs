@@ -8,7 +8,7 @@ public class SpawnController : MonoBehaviour
 
     [SerializeField] bool spawning;
 
-    [SerializeField] float waveCooldown;
+    [SerializeField] Vector2 waveCooldown;
 
     [SerializeField] int unitLimitPerTeam;
 
@@ -21,7 +21,7 @@ public class SpawnController : MonoBehaviour
     {
         while(true)
         {
-            yield return new WaitForSeconds(waveCooldown);
+            yield return new WaitForSeconds(Random.Range(waveCooldown.x, waveCooldown.y));
             if (spawning)
             {
                 List<Squadron> squadrons = AgentManager.Instance.GetSquadrons();

@@ -1385,11 +1385,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   normalSpeed: 25
-  fasterSpeed: 40
   zoomSpeed: 500
   moveEdgeSize: 0.1
-  camMoveCenter: {x: 0, y: 75, z: 0}
-  camMoveRange: {x: 100, y: 50, z: 50}
+  camMoveCenter: {x: 0, y: 75, z: -35}
+  camMoveRange: {x: 50, y: 50, z: 50}
   mount: {fileID: 816136839}
 --- !u!4 &816136839
 Transform:
@@ -1400,7 +1399,7 @@ Transform:
   m_GameObject: {fileID: 816136837}
   serializedVersion: 2
   m_LocalRotation: {x: 0.60876137, y: 0, z: 0, w: 0.7933534}
-  m_LocalPosition: {x: 0, y: 78.2, z: -29.8}
+  m_LocalPosition: {x: 0, y: 126.6, z: -29.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2701,7 +2700,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f299c203f52381746b227adc88d794db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentCount: 10
+  agentCount: 500
   allAgents: []
   squadron: []
   bullets: []
@@ -2750,30 +2749,30 @@ MonoBehaviour:
     teamPoints: 0
     teamMat: {fileID: 2100000, guid: 4878532faace7dc4d960b6c6145328bd, type: 2}
     teamColor: {r: 1, g: 0, b: 0, a: 1}
-    teamWarpPoint: {x: 90, y: 0, z: 0}
+    teamWarpPoint: {x: 90, y: 0, z: 90}
     teamWarpRadius: 25
-    warpDirection: {x: -1, y: 0, z: 0}
+    warpDirection: {x: -1, y: 0, z: -1}
   - teamName: Blue
     teamPoints: 0
     teamMat: {fileID: 2100000, guid: 5028e93c8a4d9324197b26786b537454, type: 2}
     teamColor: {r: 0, g: 0.2598443, b: 1, a: 1}
-    teamWarpPoint: {x: -90, y: 0, z: 0}
+    teamWarpPoint: {x: -90, y: 0, z: -90}
     teamWarpRadius: 25
-    warpDirection: {x: 1, y: 0, z: 0}
+    warpDirection: {x: 1, y: 0, z: 1}
   - teamName: Green
     teamPoints: 0
     teamMat: {fileID: 2100000, guid: 34acde045f068424898d770d6ec5ce2b, type: 2}
     teamColor: {r: 0, g: 0.6603774, b: 0.115693696, a: 1}
-    teamWarpPoint: {x: 0, y: 0, z: -90}
+    teamWarpPoint: {x: 90, y: 0, z: -90}
     teamWarpRadius: 25
-    warpDirection: {x: 0, y: 0, z: 1}
+    warpDirection: {x: -1, y: 0, z: 1}
   - teamName: Yellow
     teamPoints: 0
     teamMat: {fileID: 2100000, guid: fd84ba96bb41d024095ceb45e3978463, type: 2}
     teamColor: {r: 1, g: 0.9798179, b: 0, a: 1}
-    teamWarpPoint: {x: 0, y: 0, z: 90}
+    teamWarpPoint: {x: -90, y: 0, z: 90}
     teamWarpRadius: 25
-    warpDirection: {x: 0, y: 0, z: -1}
+    warpDirection: {x: 1, y: 0, z: -1}
   _warpMaterials:
   - warpPosition: {x: 0, y: 0, z: 0}
     warpNormal: {x: 0, y: 0, z: 0}
@@ -2890,7 +2889,7 @@ MonoBehaviour:
   squadronTypes:
   - {fileID: 11400000, guid: 5b995ae0c30d1ec4cbed40429116927b, type: 2}
   spawning: 1
-  waveCooldown: 6
+  waveCooldown: {x: 2, y: 6}
   unitLimitPerTeam: 30
 --- !u!1 &1601722472
 GameObject:
