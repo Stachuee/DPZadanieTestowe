@@ -7,6 +7,8 @@ public class TeamManager : MonoBehaviour
     [System.Serializable]
     public struct Team
     {
+        public string teamName;
+        public float teamPoints;
         public Material teamMat;
         public Color teamColor;
         public Vector3 teamWarpPoint;
@@ -158,6 +160,15 @@ public class TeamManager : MonoBehaviour
     public static Vector3 GetTeamWarpRotation(int teamID)
     {
         return teams[teamID].warpDirection;
+    }
+
+    public static void TeamGainPoints(int id, float value)
+    {
+        Team team = teams[id];
+
+        team.teamPoints += value;
+
+        teams[id] = team;
     }
 
     private void OnDrawGizmos()

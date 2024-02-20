@@ -191,6 +191,11 @@ public class AgentManager : MonoBehaviour
         for(int i = 0; i < captureZonesNativeArray.Length; i++)
         {
             captureZones[i] = captureZonesNativeArray[i];
+
+            if(captureZones[i].controll > 0.75f)
+            {
+                TeamManager.TeamGainPoints(captureZones[i].teamControlling, Time.deltaTime);
+            }
         }
 
         for(int i = squadronNativeArray.Length - 1; i >= 0; i--)
