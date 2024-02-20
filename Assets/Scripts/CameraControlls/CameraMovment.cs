@@ -5,7 +5,6 @@ using UnityEngine;
 public class CameraMovment : MonoBehaviour
 {
     [SerializeField] float normalSpeed;
-    [SerializeField] float fasterSpeed;
     [SerializeField] float zoomSpeed;
 
     [SerializeField] float moveEdgeSize;
@@ -28,8 +27,7 @@ public class CameraMovment : MonoBehaviour
 
         Vector2 scrollSpeed = Input.mouseScrollDelta;
 
-        bool faster = Input.GetKey(KeyCode.LeftShift); // change later for new input system
-        mount.position += Vector3.forward * verticalSpeed * (faster ? fasterSpeed : normalSpeed) * Time.deltaTime;
+        mount.position += Vector3.forward * verticalSpeed * normalSpeed * Time.deltaTime;
         mount.position += Vector3.right * horizontalSpeed * normalSpeed * Time.deltaTime;
         mount.position += Vector3.up * scrollSpeed.y * zoomSpeed * Time.deltaTime;
 

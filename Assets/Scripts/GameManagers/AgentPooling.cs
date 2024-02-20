@@ -25,10 +25,6 @@ public class AgentPooling : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Create pool with size.
-    /// </summary>
-    /// <param name="poolSize"> Pool size.</param>
     public void CreateAgentPool(int poolSize)
     {
         agentPool = new ObjectPool<GameObject>(CreateAgent, GetNewAgent, ReturnAgent, DestroyExcessAgent, true, poolSize, poolSize * 2);
@@ -81,10 +77,6 @@ public class AgentPooling : MonoBehaviour
     }
 
 
-
-    /// <summary>
-    /// Get new agent.
-    /// </summary>
     public GameObject NewAgentFromPool()
     {
         return agentPool.Get();
@@ -95,10 +87,6 @@ public class AgentPooling : MonoBehaviour
         return explosionPool.Get();
     }
 
-
-    /// <summary>
-    /// Return agent to pool.
-    /// </summary>
     public void ReturnAgentToPool(GameObject toReturn)
     {
         agentPool.Release(toReturn);

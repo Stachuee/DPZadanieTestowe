@@ -51,7 +51,6 @@ public struct MoveBullets : IJobParallelFor
     [ReadOnly] NativeArray<Agent> agents;
     NativeArray<Bullet> bullets;
 
-    // bullets hits own ship
     public MoveBullets(NativeArray<Bullet> _bullets, NativeArray<Agent> _agents, float _time, float _deltaTime, int _currentBulletChunk)
     {
         agents = _agents;
@@ -79,6 +78,7 @@ public struct MoveBullets : IJobParallelFor
         }
         else
         {
+            //move bullet and assign the last position for collision detection
             Vector3 forward = new Vector3(bullet.transformMatrix[0, 2], bullet.transformMatrix[1, 2], bullet.transformMatrix[2, 2]);
             bullet.lastPosition = bullet.transformMatrix.GetPosition();
             if (bullet.bulletChunk == currentBulletChunk) bullet.lastCollisionCheckPosition = bullet.lastPosition;
@@ -129,6 +129,8 @@ public struct MoveBullets : IJobParallelFor
         }
         else
         {
+
+            //Check how far away the collider is from the agent
             Vector3 lineVector = position - bullet.lastCollisionCheckPosition;
             float lineVectorLenght = lineVector.magnitude;
 

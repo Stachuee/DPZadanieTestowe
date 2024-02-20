@@ -127,12 +127,12 @@ Material:
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
-    - _warpProgress: -0.053032905
+    - _warpProgress: -0.059988014
     m_Colors:
     - _BaseColor: {r: 0, g: 0.6603774, b: 0.115693696, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _WarpNormal: {r: -1, g: -0, b: -0, a: 0}
-    - _WarpPosition: {r: -25, g: 0, b: -90, a: 0}
+    - _WarpNormal: {r: -0, g: -0, b: -1, a: 0}
+    - _WarpPosition: {r: 0, g: 0, b: -115, a: 0}
   m_BuildTextureStacks: []

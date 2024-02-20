@@ -226,6 +226,13 @@ public class AgentManager : MonoBehaviour
         captureZonesNativeArray.Dispose();
     }
 
+    /// <summary>
+    /// Create squadron at the team warp position.
+    /// </summary>
+    /// <param name="squadronType">Type of squadron.</param>
+    /// <param name="teamID">Team ID.</param>
+    /// <param name="newSquadron">Create new squadron, or try to add to an already existing one.</param>
+    /// <param name="squadronID">New squadron ID.</param>
     public void WarpSquadron(SquadronTypeSO squadronType, int teamID, bool newSquadron, int squadronID = 0)
     {
         int matIndex;
@@ -275,6 +282,14 @@ public class AgentManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Spawn a single unit.
+    /// </summary>
+    /// <param name="type">Unit type.</param>
+    /// <param name="spawnPoint">Vector with starting position.</param>
+    /// <param name="warpMatIndex">Warp material index.</param>
+    /// <param name="squadron">Squadron ID.</param>
+    /// <param name="team">Team ID.</param>
     public void WarpAgent(AgentTypeSO type, Vector3 spawnPoint, int warpMatIndex, int squadron, int team)
     {
         GameObject newAgent = AgentPooling.Instance.NewAgentFromPool();

@@ -79,6 +79,10 @@ public class TeamManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns true if warp material is available and index of it.
+    /// </summary>
+    /// <param name="index">Team index.</param>
     public static bool GetTeamWarpMaterialID(int index, out int matIndex)
     {
         int newWarpIndex = warpMaterials.FindIndex(mat => !mat.inProgress);
@@ -114,6 +118,12 @@ public class TeamManager : MonoBehaviour
         return true;
     }
 
+
+    /// <summary>
+    /// Assign the warp material to a renderer and after warp shader is done, automatically remove it.
+    /// </summary>
+    /// <param name="unit">Renderer.</param>
+    /// <param name="matID">Warp material ID.</param>
     public static void SubscribeUnitToWarpMat(Renderer unit, int matID)
     {
         WarpMaterial warpMat = warpMaterials[matID];

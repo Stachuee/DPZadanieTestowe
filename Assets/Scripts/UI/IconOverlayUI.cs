@@ -51,16 +51,16 @@ public class IconOverlayUI : MonoBehaviour
         UpdateSquadronMarkers();
     }
 
-    public void ClickedOnSquadron(int id)
+    public void ClickedOnSquadron(int squadronID)
     {
-        AgentInfoUI.Instance.FollowSquadron(id);
+        AgentInfoUI.Instance.FollowSquadron(squadronID);
     }
 
-    public void ClickedOnWarpPoint(int id)
+    public void ClickedOnWarpPoint(int warpPointId)
     {
-        TeamManager.currentTeam = id;
+        TeamManager.currentTeam = warpPointId;
         spawnerInfoPanel.SetActive(true);
-        HighlightWarpPoint(id, true);
+        HighlightWarpPoint(warpPointId, true);
     }
 
     void UpdateWarpPoints()
