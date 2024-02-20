@@ -11,17 +11,17 @@ public class AgentInfoUI : MonoBehaviour
 
     [SerializeField] GameObject agentInfoPanel;
 
-    [SerializeField] Image agentHp;
-    [SerializeField] TextMeshProUGUI agentName;
+    [SerializeField] Image squadronHp;
+    [SerializeField] TextMeshProUGUI squadronName;
+    [SerializeField] TextMeshProUGUI squadronUnitCount;
 
-    [SerializeField] LayerMask agentMask;
-
+    [SerializeField] GameObject arrow;
 
     Camera cam;
+    [SerializeField] LayerMask orderLayer;
 
-
-    int currentAgent;
-    bool trackingAgent;
+    int currentSquad;
+    bool trackingSquad;
 
     private void Awake()
     {
@@ -43,26 +43,43 @@ public class AgentInfoUI : MonoBehaviour
     private void Update()
     {
         if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject()) HideUI();
+        else if(Input.GetMouseButtonDown(1) && trackingSquad)
+        {
+            RaycastHit hit;
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
 
+            if (Physics.Raycast(ray, out hit, float.PositiveInfinity, orderLayer))
+            {
+                AgentManager.Instance.SendOrderToSquadron(currentSquad, hit.point);
+            }
+        }
         UpdateUI();
     }
 
     public void FollowSquadron(int squadronID)
     {
-        Debug.Log("following");
         agentInfoPanel.SetActive(true);
+        trackingSquad = true;
+        currentSquad = squadronID;
+        arrow.SetActive(true);
+        squadronName.text = AgentManager.Instance.GetSquadronNameById(currentSquad);
+        IconOverlayUI.Instance.HighlightSquad(currentSquad, true);
     }
 
     public void HideUI()
     {
         agentInfoPanel.SetActive(false);
-
+        trackingSquad = false;
+        arrow.SetActive(false);
+        IconOverlayUI.Instance.HighlightSquad(currentSquad, false);
     }
 
     void UpdateUI()
     {
-        if (!trackingAgent) return;
-        Agent agent = AgentManager.Instance.GetAgentById(currentAgent); // searching list every frame is not optimal, but worsk for now
-        agentHp.fillAmount = agent.agentHP / agent.agentMaxHP;
+        if (!trackingSquad) return;
+        Squadron squadron = AgentManager.Instance.GetSquadronById(currentSquad);
+        squadronHp.fillAmount = squadron.squadronCurrentHp / squadron.squadronMaxHp;
+        squadronUnitCount.text = squadron.squadronUnitCount + "\n" + squadron.squadronMaxUnitCount;
+        arrow.transform.position = squadron.rallyPoint;
     }
 }

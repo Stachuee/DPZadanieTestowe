@@ -21,6 +21,8 @@ public class AgentTypeSO : ScriptableObject
     [SerializeField, Min(0)] float rollSpeed;
     [SerializeField, Min(0)] float scannerRange;
 
+    [SerializeField] AgentWeaponsBlasterSO blaster;
+
 
     public float GetMass()
     { 
@@ -71,5 +73,10 @@ public class AgentTypeSO : ScriptableObject
     public float GetCaptureRate()
     {
         return captureRate;
+    }
+
+    public AgentWeaponsBlasterSO GetBlaster()
+    {
+        return blaster;
     }
 }

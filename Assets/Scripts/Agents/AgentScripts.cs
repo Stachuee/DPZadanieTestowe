@@ -93,6 +93,10 @@ public struct Squadron
 
     public Vector3 squadronCenter;
     public int squadronUnitCount;
+    public int squadronMaxUnitCount;
+
+    public float squadronMaxHp;
+    public float squadronCurrentHp;
 }
 
 [BurstCompile]
@@ -116,6 +120,7 @@ public struct SquadronUtil : IJob
 
             squadron.squadronCenter = Vector3.zero;
             squadron.squadronUnitCount = 0;
+            squadron.squadronCurrentHp = 0;
             
             squadrons[index] = squadron;
         }
@@ -125,6 +130,7 @@ public struct SquadronUtil : IJob
             Squadron squadron = squadrons[agents[i].squadron];
             
             squadron.squadronUnitCount++;
+            squadron.squadronCurrentHp += agents[i].agentHP;
             squadron.squadronCenter += agents[i].position;
 
             squadrons[agents[i].squadron] = squadron;
@@ -446,11 +452,14 @@ public struct AgentCollision : IJob
 {
     NativeArray<Agent> agents;
     [ReadOnly] float coefficientOfRestitution;
-
-    public AgentCollision(NativeArray<Agent> _agents)
+    [ReadOnly] bool takeContactDamage;
+    [ReadOnly] float collisionDamageMultiplier;
+    public AgentCollision(NativeArray<Agent> _agents, bool _takeContactDamage, float _collisionDamageMultiplier)
     {
         agents = _agents;
         coefficientOfRestitution = -0.5f;
+        takeContactDamage = _takeContactDamage;
+        collisionDamageMultiplier = _collisionDamageMultiplier;
     }
 
     public void Execute()
@@ -483,7 +492,11 @@ public struct AgentCollision : IJob
                         agentOne.flightDirection = -(impulseMagnitude / agentOne.mass) * deltaNormalized;
                         agentTwo.flightDirection = (impulseMagnitude / agentTwo.mass) * deltaNormalized;
 
-
+                        if(takeContactDamage)
+                        {
+                            agentOne.agentHP -= ((agentTwo.mass * impactSpeed) / agentOne.mass) * collisionDamageMultiplier;
+                            agentTwo.agentHP -= ((agentOne.mass * impactSpeed) / agentTwo.mass) * collisionDamageMultiplier;
+                        }
 
                         agents[i] = agentOne;
                         agents[j] = agentTwo;

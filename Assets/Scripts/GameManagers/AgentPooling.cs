@@ -58,7 +58,6 @@ public class AgentPooling : MonoBehaviour
     public void CreateExplosionPool(int poolSize)
     {
         explosionPool = new ObjectPool<ParticleSystem>(CreateExplosion, GetNewExplosion, ReturnExplosion, DestroyExcessExplosion, true, poolSize, poolSize * 2);
-        Debug.Log("created");
     }
 
     private ParticleSystem CreateExplosion()

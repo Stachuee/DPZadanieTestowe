@@ -14,6 +14,8 @@ public class UIOverlayMarker : MonoBehaviour, IPointerClickHandler, IPointerEnte
     [SerializeField] MarkerType markerType;
     [SerializeField] Image image;
 
+    [SerializeField] GameObject selected;
+
     readonly float STANDARD_ALFA = 0.5f;
     readonly float HIGHLIGHT_ALFA = 1f;
 
@@ -43,4 +45,8 @@ public class UIOverlayMarker : MonoBehaviour, IPointerClickHandler, IPointerEnte
         image.color = color;
     }
 
+    public void Select(bool state)
+    {
+        selected.SetActive(state);
+    }
 }

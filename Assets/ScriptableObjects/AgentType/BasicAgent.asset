@@ -24,3 +24,4 @@ MonoBehaviour:
   maneuverabilityHorizontal: 0.5
   rollSpeed: 1
   scannerRange: 7
+  blaster: {fileID: 11400000, guid: d77db62e8112fea419641eaa7f722df8, type: 2}

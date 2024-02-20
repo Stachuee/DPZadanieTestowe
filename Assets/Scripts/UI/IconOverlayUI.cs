@@ -15,7 +15,7 @@ public class IconOverlayUI : MonoBehaviour
 
     List<GameObject> warpPoints = new List<GameObject>();
 
-    Dictionary<int, GameObject> squadronMarkers = new Dictionary<int, GameObject>();
+    Dictionary<int, UIOverlayMarker> squadronMarkers = new Dictionary<int, UIOverlayMarker>();
     Camera cam;
 
     private void Awake()
@@ -75,7 +75,7 @@ public class IconOverlayUI : MonoBehaviour
     public void CreateSquadronWaypoint(int id, int teamID)
     {
         GameObject icon = Instantiate(squadronObject, transform);
-        squadronMarkers.Add(id, icon);
+        squadronMarkers.Add(id, icon.GetComponent<UIOverlayMarker>());
         icon.GetComponent<UIOverlayMarker>().SetMarker(id, TeamManager.teams[teamID].teamColor);
     }
 
@@ -88,6 +88,11 @@ public class IconOverlayUI : MonoBehaviour
     void UpdateCapturePoints()
     {
 
+    }
+
+    public void HighlightSquad(int squadID, bool value)
+    {
+        squadronMarkers[squadID].Select(value);
     }
 
 }
