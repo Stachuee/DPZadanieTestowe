@@ -11,11 +11,14 @@ public class IconOverlayUI : MonoBehaviour
     [SerializeField] GameObject squadronObject;
     [SerializeField] GameObject warpPointObject;
 
+    [SerializeField] GameObject spawnerInfoPanel;
+
     [SerializeField] float maxMarkerMovment;
 
     List<GameObject> warpPoints = new List<GameObject>();
 
     Dictionary<int, UIOverlayMarker> squadronMarkers = new Dictionary<int, UIOverlayMarker>();
+    Dictionary<int, UIOverlayMarker> warpMarkers = new Dictionary<int, UIOverlayMarker>();
     Camera cam;
 
     private void Awake()
@@ -36,8 +39,9 @@ public class IconOverlayUI : MonoBehaviour
         for (int i = 0; i < TeamManager.teams.Count; i++)
         {
             GameObject icon = Instantiate(warpPointObject, transform);
+            warpMarkers.Add(i, icon.GetComponent<UIOverlayMarker>());
             warpPoints.Add(icon);
-            icon.GetComponent<UIOverlayMarker>().SetMarker(i, TeamManager.teams[i].teamColor);   
+            warpMarkers[i].SetMarker(i, TeamManager.teams[i].teamColor);   
         }
     }
 
@@ -47,12 +51,16 @@ public class IconOverlayUI : MonoBehaviour
         UpdateSquadronMarkers();
     }
 
-    public void ClickedOnSquadron(UIOverlayMarker.MarkerType markerType, int id)
+    public void ClickedOnSquadron(int id)
     {
-        if(markerType == UIOverlayMarker.MarkerType.SquadronMarker)
-        {
-            AgentInfoUI.Instance.FollowSquadron(id);
-        }
+        AgentInfoUI.Instance.FollowSquadron(id);
+    }
+
+    public void ClickedOnWarpPoint(int id)
+    {
+        TeamManager.currentTeam = id;
+        spawnerInfoPanel.SetActive(true);
+        HighlightWarpPoint(id, true);
     }
 
     void UpdateWarpPoints()
@@ -68,7 +76,8 @@ public class IconOverlayUI : MonoBehaviour
         List<Squadron> squadrons = AgentManager.Instance.GetSquadrons();
         for (int i = 0; i < squadrons.Count; i++)
         {
-            squadronMarkers[i].transform.position = Vector3.MoveTowards(squadronMarkers[i].transform.position, cam.WorldToScreenPoint(squadrons[i].squadronCenter), maxMarkerMovment * Time.deltaTime);
+            if(squadronMarkers.ContainsKey(squadrons[i].squdronID)) squadronMarkers[squadrons[i].squdronID].transform.position = cam.WorldToScreenPoint(squadrons[i].squadronCenter);
+            //squadronMarkers[i].transform.position = Vector3.MoveTowards(squadronMarkers[i].transform.position, cam.WorldToScreenPoint(squadrons[i].squadronCenter), Screen.width * maxMarkerMovment * Time.deltaTime);
         }
     }
 
@@ -81,18 +90,18 @@ public class IconOverlayUI : MonoBehaviour
 
     public void RemoveSquadronWaypoint(int id)
     {
-        Destroy(squadronMarkers[id]);
+        AgentInfoUI.Instance.SquadDestroyed(id);
+        squadronMarkers[id].DestroyMarker();
         squadronMarkers.Remove(id);
     }
-
-    void UpdateCapturePoints()
-    {
-
-    }
+    
 
     public void HighlightSquad(int squadID, bool value)
     {
         squadronMarkers[squadID].Select(value);
     }
-
+    public void HighlightWarpPoint(int team, bool value)
+    {
+        warpMarkers[team].Select(value);
+    }
 }

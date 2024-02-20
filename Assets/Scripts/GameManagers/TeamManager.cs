@@ -36,8 +36,10 @@ public class TeamManager : MonoBehaviour
     [SerializeField] List<WarpMaterial> _warpMaterials;
     static List<WarpMaterial> warpMaterials = new List<WarpMaterial>();
 
+    public static int currentTeam;
+
     static readonly float WARP_SPEED = 20;
-    static readonly float WARP_STREACH = 5;
+    static readonly float WARP_STREACH = 10;
 
     private void Awake()
     {
@@ -75,13 +77,14 @@ public class TeamManager : MonoBehaviour
         }
     }
 
-    public static int GetTeamWarpMaterialID(int index)
+    public static bool GetTeamWarpMaterialID(int index, out int matIndex)
     {
         int newWarpIndex = warpMaterials.FindIndex(mat => !mat.inProgress);
         if (newWarpIndex == -1)
         {
             Debug.LogError("No free warp mats avalible");
-            return -1;
+            matIndex = -1;
+            return false;
         }
 
         Team team = teams[index];
@@ -105,7 +108,8 @@ public class TeamManager : MonoBehaviour
 
 
         warpMaterials[newWarpIndex] = warpMaterial;
-        return newWarpIndex;
+        matIndex = newWarpIndex;
+        return true;
     }
 
     public static void SubscribeUnitToWarpMat(Renderer unit, int matID)

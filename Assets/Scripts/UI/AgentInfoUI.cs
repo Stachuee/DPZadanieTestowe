@@ -10,6 +10,7 @@ public class AgentInfoUI : MonoBehaviour
     public static AgentInfoUI Instance { get; private set; }
 
     [SerializeField] GameObject agentInfoPanel;
+    [SerializeField] GameObject spawnerInfoPanel;
 
     [SerializeField] Image squadronHp;
     [SerializeField] TextMeshProUGUI squadronName;
@@ -21,7 +22,7 @@ public class AgentInfoUI : MonoBehaviour
     [SerializeField] LayerMask orderLayer;
 
     int currentSquad;
-    bool trackingSquad;
+    [SerializeField] bool trackingSquad;
 
     private void Awake()
     {
@@ -59,6 +60,7 @@ public class AgentInfoUI : MonoBehaviour
     public void FollowSquadron(int squadronID)
     {
         agentInfoPanel.SetActive(true);
+        if(trackingSquad) IconOverlayUI.Instance.HighlightSquad(currentSquad, false);
         trackingSquad = true;
         currentSquad = squadronID;
         arrow.SetActive(true);
@@ -69,9 +71,11 @@ public class AgentInfoUI : MonoBehaviour
     public void HideUI()
     {
         agentInfoPanel.SetActive(false);
+        spawnerInfoPanel.SetActive(false);
+        if (trackingSquad) IconOverlayUI.Instance.HighlightSquad(currentSquad, false);
         trackingSquad = false;
         arrow.SetActive(false);
-        IconOverlayUI.Instance.HighlightSquad(currentSquad, false);
+        IconOverlayUI.Instance.HighlightWarpPoint(TeamManager.currentTeam, false);
     }
 
     void UpdateUI()
@@ -81,5 +85,13 @@ public class AgentInfoUI : MonoBehaviour
         squadronHp.fillAmount = squadron.squadronCurrentHp / squadron.squadronMaxHp;
         squadronUnitCount.text = squadron.squadronUnitCount + "\n" + squadron.squadronMaxUnitCount;
         arrow.transform.position = squadron.rallyPoint;
+    }
+
+    public void SquadDestroyed(int id)
+    {
+        if (currentSquad == id)
+        {
+            HideUI();
+        }
     }
 }

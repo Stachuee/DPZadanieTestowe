@@ -16,12 +16,12 @@ MonoBehaviour:
   agentMaxHP: 5
   colliderSize: 0.5
   dragCoefficient: 0.47
-  engineMaxStrenght: 1000
-  breakingStrenght: 2000
+  engineMaxStrenght: 1500
+  breakingStrenght: 1000
   avoidenenceRange: 5
   captureRate: 0.1
   maneuverabilityVertical: 1
   maneuverabilityHorizontal: 0.5
   rollSpeed: 1
-  scannerRange: 7
+  scannerRange: 15
   blaster: {fileID: 11400000, guid: d77db62e8112fea419641eaa7f722df8, type: 2}

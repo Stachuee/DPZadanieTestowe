@@ -8,8 +8,8 @@ public class UIOverlayMarker : MonoBehaviour, IPointerClickHandler, IPointerEnte
 {
     public enum MarkerType {WarpPoint, SquadronMarker, CaptureFlag };
 
+    [SerializeField]
     int id;
-    Image marker;
     [SerializeField] bool clickable;
     [SerializeField] MarkerType markerType;
     [SerializeField] Image image;
@@ -28,11 +28,21 @@ public class UIOverlayMarker : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     public void OnPointerClick(PointerEventData eventData) 
     {
-        IconOverlayUI.Instance.ClickedOnSquadron(markerType, id);
+        if (!clickable) return;
+        switch (markerType)
+        {
+            case MarkerType.SquadronMarker:
+                IconOverlayUI.Instance.ClickedOnSquadron(id);
+                break;
+            case MarkerType.WarpPoint:
+                IconOverlayUI.Instance.ClickedOnWarpPoint(id);
+                break;
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (!clickable) return;
         Color color = image.color;
         color.a = HIGHLIGHT_ALFA;
         image.color = color;
@@ -40,9 +50,15 @@ public class UIOverlayMarker : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (!clickable) return;
         Color color = image.color;
         color.a = STANDARD_ALFA;
         image.color = color;
+    }
+
+    public void DestroyMarker()
+    {
+        Destroy(gameObject);
     }
 
     public void Select(bool state)

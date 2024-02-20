@@ -13,15 +13,22 @@ public class SquadronTypeSO : ScriptableObject
     }
 
     [SerializeField] string squadronName;
+
+    [SerializeField] Sprite squadronImage;
     [SerializeField] List<UnitType> units;
 
     public string GenerateSquadronName()
     {
         int number = Random.Range(20, 1000);
-        return squadronName + " " + number + (number % 10 == 1 ? "st" : (number % 10 == 2 ? "nd" : (number % 10 == 3 ? "rd" : "th"))) + " squadron";
+        return number + (number % 10 == 1 ? "st" : (number % 10 == 2 ? "nd" : (number % 10 == 3 ? "rd" : "th"))) + " " +  squadronName + " squadron";
     }
     public List<UnitType> ToSpawn()
     {
         return units;
+    }
+
+    public Sprite GetImage()
+    {
+        return squadronImage;
     }
 }

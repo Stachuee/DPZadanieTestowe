@@ -97,14 +97,12 @@ public struct MoveBullets : IJobParallelFor
 
         int closest = -1;
         float closestDistance = float.PositiveInfinity;
-        Vector3 middle = bullet.lastCollisionCheckPosition + (position - bullet.lastCollisionCheckPosition) / 2;
-
 
 
         for (int i = 0; i < agents.Length; i++)
         {
             Agent agent = agents[i];
-            if (agent.agentTeam == bullet.teamID || agent.position.x - agent.colliderSize > math.max(middle.x, position.x))
+            if (agent.position.x - agent.colliderSize > math.min(bullet.lastCollisionCheckPosition.x, position.x))
             {
                 break;
             }
@@ -138,12 +136,18 @@ public struct MoveBullets : IJobParallelFor
                 (closestAgent.position.y - position.y) * (bullet.lastCollisionCheckPosition.y - position.y) +
                 (closestAgent.position.z - position.z) * (bullet.lastCollisionCheckPosition.z - position.z)) / (lineVectorLenght * lineVectorLenght);
 
-            if (t < 0 || t > 1) return false;
-            else
+            Vector3 intersection = new Vector3(
+                position.x + t * (bullet.lastCollisionCheckPosition.x - position.x),
+                position.y + t * (bullet.lastCollisionCheckPosition.y - position.y),
+                position.z + t * (bullet.lastCollisionCheckPosition.z - position.z)
+            );
+
+            if ((intersection - closestAgent.position).magnitude < closestAgent.colliderSize)
             {
                 hitID = closest;
                 return true;
             }
+            return false;
 
         }
     }

@@ -34,6 +34,7 @@ public class AgentManager : MonoBehaviour
     [SerializeField] Vector3 bulletSize = new Vector3(.4f, .2f, .2f);
 
     int nextAgentId = 0;
+    int nextSquadronId = 0;
     [SerializeField, Min(1)] int bulletsChunks;
     int currentBulletChunkCheck;
     int currentBulletChunk;
@@ -55,7 +56,6 @@ public class AgentManager : MonoBehaviour
     [SerializeField] Material bulletMaterial;
     RenderParams bulletRenderParams;
 
-    [SerializeField] SquadronTypeSO squadronType;
 
 
 
@@ -79,9 +79,6 @@ public class AgentManager : MonoBehaviour
         bulletRenderParams = new RenderParams(bulletMaterial);
         bulletRenderParams.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         bulletRenderParams.receiveShadows = false;
-
-        WarpSquadron(50, squadronType, 0, 0);
-        WarpSquadron(50, squadronType, 1, 1);
 
     }
 
@@ -161,7 +158,7 @@ public class AgentManager : MonoBehaviour
         bulletHandle.Complete();
         zonesHandle.Complete();
 
-        for (int i = 0; i < allAgents.Count; i++)
+        for (int i = 0; i < agentsNativeArray.Length; i++)
         {
             allAgents[i] = agentsNativeArray[i];
             if (allAgents[i].blaster.fired)
@@ -205,7 +202,7 @@ public class AgentManager : MonoBehaviour
             else
             {
                 IconOverlayUI.Instance.RemoveSquadronWaypoint(squadron[i].squdronID);
-                squadronNames.Remove(squadron[i].squdronID);
+                squadronNames.Remove(squadronNativeArray[i].squdronID);
                 squadron.RemoveAt(i);
             }
         }
@@ -224,12 +221,20 @@ public class AgentManager : MonoBehaviour
         captureZonesNativeArray.Dispose();
     }
 
-    public void WarpSquadron(int unitCount, SquadronTypeSO squadronType, int squadronID, int teamID)
+    public void WarpSquadron(SquadronTypeSO squadronType, int teamID, bool newSquadron, int squadronID = 0)
     {
-        int matIndex = TeamManager.GetTeamWarpMaterialID(teamID);
+        int matIndex;
+        if (!TeamManager.GetTeamWarpMaterialID(teamID, out matIndex)) return;
+
+        if (newSquadron)
+        {
+            squadronID = nextSquadronId;
+            nextSquadronId++;
+        }
 
         float maxHp = 0;
         int squadUnitCout = 0;
+
         squadronType.ToSpawn().ForEach(type =>
         {
             maxHp += type.ammount * type.type.GetHp();
@@ -245,6 +250,8 @@ public class AgentManager : MonoBehaviour
             );
             }
         });
+
+
         int squadronIndex = squadron.FindIndex(squadron => squadron.squdronID == squadronID);
         if (squadronIndex == -1)
         {
@@ -255,6 +262,7 @@ public class AgentManager : MonoBehaviour
                 squdronID = squadronID,
                 squadronMaxHp = maxHp,
                 squadronMaxUnitCount = squadUnitCout,
+                teamID = teamID,
             };
             squadronNames.Add(squadronID, squadronType.GenerateSquadronName());
             squadron.Add(order);
