@@ -8,8 +8,10 @@ public class AgentPooling : MonoBehaviour
     public static AgentPooling Instance;
 
     [SerializeField] GameObject agentPrefab;
+    [SerializeField] ParticleSystem explosionPrefab;
 
     ObjectPool<GameObject> agentPool;
+    ObjectPool<ParticleSystem> explosionPool;
 
     private void Awake()
     {
@@ -27,9 +29,9 @@ public class AgentPooling : MonoBehaviour
     /// Create pool with size.
     /// </summary>
     /// <param name="poolSize"> Pool size.</param>
-    public void CreatePool(int poolSize)
+    public void CreateAgentPool(int poolSize)
     {
-        agentPool = new ObjectPool<GameObject>(CreateAgent, GetNewAgent, ReturnAgent, DestroyExcessAgent, true, poolSize, 1000);
+        agentPool = new ObjectPool<GameObject>(CreateAgent, GetNewAgent, ReturnAgent, DestroyExcessAgent, true, poolSize, poolSize * 2);
     }
 
     private GameObject CreateAgent()
@@ -49,8 +51,37 @@ public class AgentPooling : MonoBehaviour
 
     private void DestroyExcessAgent(GameObject agent)
     {
-
+        Destroy(agent);
     }
+
+
+    public void CreateExplosionPool(int poolSize)
+    {
+        explosionPool = new ObjectPool<ParticleSystem>(CreateExplosion, GetNewExplosion, ReturnExplosion, DestroyExcessExplosion, true, poolSize, poolSize * 2);
+        Debug.Log("created");
+    }
+
+    private ParticleSystem CreateExplosion()
+    {
+        return Instantiate(explosionPrefab);
+    }
+
+    private void GetNewExplosion(ParticleSystem explosion)
+    {
+        explosion.gameObject.SetActive(true);
+    }
+
+    private void ReturnExplosion(ParticleSystem explosion)
+    {
+        explosion.gameObject.SetActive(false);
+    }
+
+    private void DestroyExcessExplosion(ParticleSystem explosion)
+    {
+        Destroy(explosion);
+    }
+
+
 
     /// <summary>
     /// Get new agent.
@@ -60,6 +91,11 @@ public class AgentPooling : MonoBehaviour
         return agentPool.Get();
     }
 
+    public ParticleSystem NewExplosionFromPool()
+    {
+        return explosionPool.Get();
+    }
+
 
     /// <summary>
     /// Return agent to pool.
@@ -67,5 +103,10 @@ public class AgentPooling : MonoBehaviour
     public void ReturnAgentToPool(GameObject toReturn)
     {
         agentPool.Release(toReturn);
+    }
+
+    public void ReturnExplosionToPool(ParticleSystem toReturn)
+    {
+        explosionPool.Release(toReturn);
     }
 }

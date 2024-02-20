@@ -91,8 +91,8 @@ public class TeamManager : MonoBehaviour
         warpMaterial.inProgress = true;
         warpMaterial.teamWarp = index;
 
-        warpMaterial.warpPosition = team.teamWarpPoint + team.warpDirection * team.teamWarpRadius;
-        warpMaterial.warpNormal = team.warpDirection;
+        warpMaterial.warpPosition = team.teamWarpPoint - team.warpDirection * team.teamWarpRadius;
+        warpMaterial.warpNormal = -team.warpDirection;
         warpMaterial.warpSpeed = WARP_SPEED;
         warpMaterial.warpProgress = team.teamWarpRadius * 2;
         warpMaterial.renderersUsingMat = new List<Renderer>();

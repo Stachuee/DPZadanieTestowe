@@ -27,6 +27,7 @@ public class AgentManager : MonoBehaviour
     [SerializeField] Vector3 playfieldCenter;
     [SerializeField] Vector3 playfieldSize;
 
+    [SerializeField] Vector3 bulletSize = new Vector3(.4f, .2f, .2f);
 
     int nextAgentId = 0;
     [SerializeField, Min(1)] int bulletsChunks;
@@ -67,16 +68,16 @@ public class AgentManager : MonoBehaviour
 
     private void Start()
     {
-        AgentPooling.Instance.CreatePool(agentCount);
+        AgentPooling.Instance.CreateAgentPool(agentCount);
+        AgentPooling.Instance.CreateExplosionPool(Mathf.Max(agentCount/4 , 1));
 
         bulletRenderParams = new RenderParams(bulletMaterial);
         bulletRenderParams.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         bulletRenderParams.receiveShadows = false;
 
-        WarpSquadron(1, type, blaster, 0, 0);
-        WarpSquadron(1, type, blaster, 1, 1);
-        WarpSquadron(1, type, blaster, 2, 0);
-        WarpSquadron(1, type, blaster, 3, 1);
+        WarpSquadron(50, type, blaster, 0, 0);
+        WarpSquadron(50, type, blaster, 1, 1);
+
     }
 
 
@@ -146,6 +147,7 @@ public class AgentManager : MonoBehaviour
     }
 
 
+
     private void LateUpdate()
     {
         agentSteeringHandle.Complete();
@@ -166,7 +168,7 @@ public class AgentManager : MonoBehaviour
                     shooter.agentTeam,
                     shooter.position + shooter.blaster.barrelOrientation * shooter.colliderSize * 1.5f,
                     Quaternion.LookRotation(shooter.blaster.barrelOrientation, allAgents[i].up),
-                    Vector3.one / 5,
+                    bulletSize,
                     shooter.blaster.missleSpeed,
                     shooter.blaster.damage,
                     Time.time,
@@ -318,6 +320,9 @@ public class AgentManager : MonoBehaviour
 
         for(int i = toRemove.Count - 1; i >= 0; i--)
         {
+            ParticleSystem particle = AgentPooling.Instance.NewExplosionFromPool();
+            particle.transform.position = allAgents[toRemove[i]].position;
+            particle.Play();
             agentNames.Remove(allAgents[toRemove[i]].id);
             allAgents.RemoveAt(toRemove[i]);
             AgentPooling.Instance.ReturnAgentToPool(allAgentTransforms[toRemove[i]].gameObject);
